@@ -172,6 +172,20 @@ class Crawler
     h
   end
 
+  def parse_dc(h)
+    if @s =~ /Last Update: 6 pm, ([^,]+,[^,]+) Number of patients being monitored by DC Health and tested for COVID-19 \(PUIs\): ([^\s]+) Number of negative results: ([^\s]+) Number of pending results: ([^\s]+) Presumptive positive results: ([^\"]+)\"/
+      h[:date] = $1.strip
+      h[:pui] = $2.to_i
+      h[:negative] = $3.to_i
+      h[:pending] = $4.to_i
+      h[:positive] = $5.to_i
+      h[:tested] = h[:negative] + h[:pending] + h[:positive]
+    else
+      @errors << "parse failed"
+    end
+    h
+  end
+
   def parse_de(h)
     rows = @doc.css('table')[0].text.gsub("\r",'').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[1] =~ /^\* As of ([^\.]+)\.M/
