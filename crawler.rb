@@ -1060,7 +1060,7 @@ class Crawler
       @s = `curl -s #{@url}`
       @doc = Nokogiri::HTML(@s)
       @errors = []
-      h = {:ts => Time.now, :st => @st}
+      h = {:ts => Time.now, :st => @st, :source => @url}
       h = send("parse_#{@st}", h)
       open("#{@path}#{@st}/#{Time.now.to_s[0..18].gsub(' ','_')}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
