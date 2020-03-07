@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:36:08 -0800, :st=>"or", :date=>"3/6/2020, 9:30 AM", :positive=>3, :negative=>64, :pending=>28, :tested=>95, :pum_date=>"3/6/2020, 9:30 AM", :pum_current=>190, :pum_complete=>247, :pum_total=>437, :cases=>3, :error=>[]}
+{:ts=>2020-03-07 14:34:57 -0800, :st=>"or", :positive=>7, :negative=>77, :pending=>40, :tested=>124, :pum_current=>162, :pum_complete=>278, :pum_total=>440, :pui=>162, :pui_cumulative=>440, :error=>[]}

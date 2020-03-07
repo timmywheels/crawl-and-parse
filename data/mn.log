@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:34:48 -0800, :st=>"mn", :cases=>1, :negative=>48, :tested=>49, :date=>"March 6, 2020 at 3:00 p.m.", :error=>[]}
+{:ts=>2020-03-07 14:26:22 -0800, :st=>"mn", :positive=>1, :negative=>48, :tested=>49, :date=>"March 6, 2020 at 3:00 p.m.", :error=>[]}

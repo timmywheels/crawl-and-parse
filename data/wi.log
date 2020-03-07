@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:36:48 -0800, :st=>"wi", :cases=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
+{:ts=>2020-03-07 14:36:49 -0800, :st=>"wi", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}

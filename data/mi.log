@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:34:48 -0800, :st=>"mi", :date=>"3/6/2020", :pui=>27, :negative=>18, :cases=>0, :pending=>9, :monitored_all=>425, :monitored=>98, :tested=>27, :error=>[]}
+{:ts=>2020-03-07 14:26:21 -0800, :st=>"mi", :date=>"3/6/2020", :pui=>27, :negative=>18, :positive=>0, :pending=>9, :pui_cumulative=>425, :monitored=>98, :tested=>27, :error=>[]}

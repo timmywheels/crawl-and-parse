@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:33:13 -0800, :st=>"co", :cases=>8, :negative=>"109", :pui=>69, :tested=>186, :error=>[]}
+{:ts=>2020-03-07 14:07:45 -0800, :st=>"co", :date=>"March 7 at 10:30 a.m", :positive=>8, :error=>["missing tested table, removed on 3/7/2020"]}

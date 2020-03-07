@@ -1,0 +1,2 @@
+{:ts=>2020-03-06 22:34:45 -0800, :st=>"md", :tested=>44, :pending=>8, :negative=>33, :cases=>3, :error=>[]}
+{:ts=>2020-03-07 14:26:05 -0800, :st=>"md", :tested=>44, :negative=>41, :positive=>3, :error=>["missing pending"]}
