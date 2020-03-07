@@ -916,7 +916,7 @@ class Crawler
         @errors << "missing 1"
       end
     else
-      @errors << "missing, removed on 3/7/2020"
+      @errors << "missing monitoring, removed on 3/7/2020"
     end
     if @doc.css('table')[0] && (rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}) && rows[-3] == 'Total'
       # TODO parse each county
