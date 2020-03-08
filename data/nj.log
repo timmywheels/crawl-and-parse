@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:35:20 -0800, :st=>"nj", :error=>[]}
 {:ts=>2020-03-07 14:34:20 -0800, :st=>"nj", :error=>[]}
+{:ts=>2020-03-07 22:54:58 -0800, :st=>"nj", :source=>"https://www.nj.gov/health/", :negative=>25, :positive=>4, :tested=>29, :pending=>4, :pui=>15, :error=>[]}

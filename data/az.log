@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:32:33 -0800, :st=>"az", :tested=>51, :confirmed=>"1", :presumptive=>"2", :pui=>15, :cases=>3, :deaths=>0, :error=>[]}
 {:ts=>2020-03-07 14:07:29 -0800, :st=>"az", :tested=>56, :pui_cumulative=>56, :confirmed=>2, :presumptive=>3, :pui=>7, :positive=>5, :deaths=>0, :date=>"3/7/2020 9:01:05 AM", :error=>[]}
+{:ts=>2020-03-07 22:48:59 -0800, :st=>"az", :source=>"https://tableau.azdhs.gov/views/COVID-19Table/COVID-19table?:isGuestRedirectFromVizportal=y&:embed=y", :tested=>56, :pui_cumulative=>56, :confirmed=>2, :presumptive=>3, :pui=>7, :positive=>5, :deaths=>0, :date=>"3/7/2020 9:01:05 AM", :error=>[]}

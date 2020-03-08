@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:34:09 -0800, :st=>"id", :cases=>0, :monitored=>36, :monitored_done=>27, :tested=>27, :error=>[]}
 {:ts=>2020-03-07 14:25:52 -0800, :st=>"id", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}
+{:ts=>2020-03-07 22:52:40 -0800, :st=>"id", :source=>"https://healthandwelfare.idaho.gov/COVID19/tabid/4664/Default.aspx", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}

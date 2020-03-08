@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:33:12 -0800, :st=>"ar", :date=>"March 6, 2020", :cases=>0, :pui=>0, :monitored=>99, :pui_past=>"6 negative test", :error=>[]}
 {:ts=>2020-03-07 14:07:29 -0800, :st=>"ar", :date=>"March 6, 2020", :positive=>0, :pui=>0, :monitored=>99, :tested=>6, :pui_cumulative=>6, :error=>[]}
+{:ts=>2020-03-07 22:48:59 -0800, :st=>"ar", :source=>"https://www.healthy.arkansas.gov/programs-services/topics/novel-coronavirus", :date=>"March 6, 2020", :positive=>0, :pui=>0, :monitored=>99, :tested=>6, :pui_cumulative=>6, :error=>[]}

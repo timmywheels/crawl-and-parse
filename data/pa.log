@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:36:10 -0800, :st=>"pa", :error=>[]}
 {:ts=>2020-03-07 14:34:58 -0800, :st=>"pa", :error=>[]}
+{:ts=>2020-03-07 22:55:23 -0800, :st=>"pa", :source=>"https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx", :date=>"March 7, 2020", :positive=>4, :error=>[]}

@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:36:10 -0800, :st=>"ri", :cases=>2, :error=>[]}
 {:ts=>2020-03-07 14:34:59 -0800, :st=>"ri", :positive=>2, :error=>[]}
+{:ts=>2020-03-07 22:55:23 -0800, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}

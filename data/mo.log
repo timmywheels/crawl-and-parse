@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:34:49 -0800, :st=>"mo", :cases=>0, :error=>[]}
 {:ts=>2020-03-07 14:26:22 -0800, :st=>"mo", :positive=>0, :error=>[]}
+{:ts=>2020-03-07 22:53:48 -0800, :st=>"mo", :source=>"https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/", :positive=>1, :error=>[]}

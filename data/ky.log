@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:34:42 -0800, :st=>"ky", :error=>[]}
 {:ts=>2020-03-07 14:26:01 -0800, :st=>"ky", :error=>[]}
+{:ts=>2020-03-07 22:53:35 -0800, :st=>"ky", :source=>"https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx", :date=>"March 7, 2020", :tested=>14, :positive=>1, :negative=>13, :error=>[]}

@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:36:48 -0800, :st=>"wv", :error=>[]}
 {:ts=>2020-03-07 14:36:50 -0800, :st=>"wv", :date=>"March 7, 2020", :tested=>5, :negative=>2, :pending=>3, :positive=>0, :error=>[]}
+{:ts=>2020-03-07 22:57:18 -0800, :st=>"wv", :source=>"https://dhhr.wv.gov/Coronavirus%20Disease-COVID-19/Pages/default.aspx", :date=>"March 7, 2020", :tested=>5, :negative=>2, :pending=>3, :positive=>0, :error=>[]}

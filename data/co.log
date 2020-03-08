@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:33:13 -0800, :st=>"co", :cases=>8, :negative=>"109", :pui=>69, :tested=>186, :error=>[]}
 {:ts=>2020-03-07 14:07:45 -0800, :st=>"co", :date=>"March 7 at 10:30 a.m", :positive=>8, :error=>["missing tested table, removed on 3/7/2020"]}
+{:ts=>2020-03-07 22:49:20 -0800, :st=>"co", :source=>"https://docs.google.com/document/d/e/2PACX-1vRSxDeeJEaDxir0cCd9Sfji8ZPKzNaCPZnvRCbG63Oa1ztz4B4r7xG_wsoC9ucd_ei3--Pz7UD50yQD/pub", :date=>"March 7, 5:37 p.m.", :positive=>8, :negative=>208, :tested=>216, :error=>[]}

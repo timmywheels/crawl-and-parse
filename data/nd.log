@@ -1,2 +1,3 @@
 {:ts=>2020-03-06 22:35:33 -0800, :st=>"nd", :cases=>0, :error=>[]}
 {:ts=>2020-03-07 14:27:32 -0800, :st=>"nd", :date=>"3/6/2020", :positive=>0, :error=>[]}
+{:ts=>2020-03-07 22:54:42 -0800, :st=>"nd", :source=>"https://www.health.nd.gov/diseases-conditions/coronavirus/north-dakota-coronavirus-cases", :positive=>0, :error=>[]}

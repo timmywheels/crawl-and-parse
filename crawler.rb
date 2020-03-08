@@ -3,10 +3,10 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = false # saves output to "debug/" dir
+DEBUG_FLAG = true # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = nil # run for a single state
+DEBUG_ST = nil  # run for a single state
 
 class Crawler
 
@@ -121,21 +121,16 @@ class Crawler
 
   def parse_ca(h)
     @s.gsub!("&#160;",'')
-    if @s =~ /As of(.+), there are a total of(.+)positivecases and(.+)death in California:(.+)cases are from repatriation flights. The other(.+)confirmed cases include(.+)that are travel related,(.+)due to person-to-person exposure fromfamily contact,(.+)due to person-to-person exposure in a health care facility,(.+)community acquired and(.+)from unknown sources/
-      h = {
-        :date => $1.strip,
-        :st => @st,
-        :positive => string_to_i($2),
-        :deaths => string_to_i($3),
-        :case_repatriation => string_to_i($4),
-        :case_other => string_to_i($5),
-        :case_other_travel => string_to_i($6),
-        :case_other_family => string_to_i($7),
-        :case_other_healthcare => string_to_i($8),
-        :case_other_community => string_to_i($9),
-        :case_unknown => string_to_i($10),
-        :ts => Time.now
-      }
+    if @s =~ /As of(.+), there are a total of(.+)positivecases and(.+)death in California:(.+)cases are from repatriation flights. The other(.+)confirmed cases include(.+)that are travel related,(.+)due to person-to-person,(.+)community acquired and(.+)from unknown sources/
+      h[:date] = $1.strip
+      h[:positive] = string_to_i($2)
+      h[:deaths] = string_to_i($3)
+      h[:case_repatriation] = string_to_i($4)
+      h[:case_other] = string_to_i($5)
+      h[:case_other_travel] = string_to_i($6)
+      h[:case_other_p2p] = string_to_i($7)
+      h[:case_other_community] = string_to_i($8)
+      h[:case_unknown] = string_to_i($9)
     else # regex doesn't match
       @errors << "CA not parsed"
       h[:s] = @s
@@ -144,6 +139,8 @@ class Crawler
   end
 
   def parse_co(h)
+# old page
+=begin
     if @doc.text.gsub(',','') =~ /Colorado COVID19 cases as of (.+)m:\s+([0-9]+)All cases are presumptive positive/
       h[:date] = $1 + 'm'
       h[:positive] = $2.to_i
@@ -160,6 +157,19 @@ class Crawler
     else
       @errors << "missing tested table, removed on 3/7/2020"
     end
+=end
+    if @s =~ />UPDATED: <\/span><span class=\"[^"]*\">([^<]+)</
+      h[:date] = $1.strip
+    else
+      @errors << "missing date"
+    end
+    if @doc.css('table')[0].text.gsub(',','') =~ /Positive([0-9]+)Negative([0-9]+)Total tests\*([0-9]+)/
+      h[:positive] = $1.to_i
+      h[:negative] = $2.to_i
+      h[:tested] = $3.to_i
+    else
+      @errors << "missing tests"
+    end
     h
   end
 
@@ -173,12 +183,15 @@ class Crawler
   end
 
   def parse_dc(h)
-    if @s =~ /Last Update: 6 pm, ([^,]+,[^,]+) Number of patients being monitored by DC Health and tested for COVID-19 \(PUIs\): ([^\s]+) Number of negative results: ([^\s]+) Number of pending results: ([^\s]+) Presumptive positive results: ([^\"]+)\"/
+    @driver.navigate.to @url
+    @s = @driver.find_elements(class: 'field-items')[0].text
+    if @s.gsub(',','') =~ /Update: ([^\n]+)\nNumber of patients being monitored by DC Health and tested for COVID\-19 \(PUIs\): ([0-9]+)\nNumber of negative results: ([0-9]+)\nNumber of pending results: ([0-9]+)\nNumber of presumptive positive results: ([0-9]+)\nNumber of presumptive positive results from other lab: ([0-9]+)/
       h[:date] = $1.strip
       h[:pui] = $2.to_i
       h[:negative] = $3.to_i
       h[:pending] = $4.to_i
       h[:positive] = $5.to_i
+      h[:positive_other_lab] = $6.to_i
       h[:tested] = h[:negative] + h[:pending] + h[:positive]
     else
       @errors << "parse failed"
@@ -285,14 +298,22 @@ class Crawler
   end # parse_fl
 
   def parse_ga(h)
-    # TODO link
-    @driver.navigate.to @url
-    puts "link has no data for GA"
-    byebug if USER_FLAG
+    # TODO
+    puts "link has no data for ga"
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug
+    end
     h
   end
 
   def parse_hi(h)
+    if @s =~ />Update: On March 6, 2020 HDOH identified the first presumptive positive case of COVID-19 in Hawaii/
+      h[:positive] = 1
+    else
+      @errors << "HI updated"
+    end
+=begin # table removed on 3/7/2020
     rows = @doc.css('table')[0].text.gsub(" ",' ').split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if rows[0] == "Number of Confirmed Case(s)" && rows.size == 10
       h[:positive] = rows[1].to_i
@@ -313,14 +334,17 @@ class Crawler
     else
       @errors << 'date'
     end
+=end
     h
   end
 
   def parse_ia(h)
     # TODO
-    @driver.navigate.to @url
     puts "stats are in image in ia"
-    byebug if USER_FLAG
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug
+    end
     h
   end
 
@@ -375,6 +399,27 @@ class Crawler
     end
     h
   end # parse_il  
+
+  def parse_in(h)
+    if @s =~ /United States. On March 6, ISDH <a href\=\"https:\/\/calendar.in.gov\/site\/isdh\/event\/state-health-department-confirms-1st-case-of-covid-19--in-hoosier-with-recent-travel\/\">confirmed<\/a>\&nbsp\;the first case/
+      h[:positive] = 1
+    else
+      @errors << "failed to parse"
+    end
+    h
+  end
+
+  def parse_ky(h)
+    if @s =~ /Current as of (.*) at&#160\;<br>4&#58\;30 p.m.&#160\;Eastern time<br><br>Kentucky Coronavirus Monitoring<\/strong><br>Number Tested&#58\; ([0-9]+)<br>Positive&#58\;&#160\;([0-9]+)&#160\;<br>Negative&#58\; ([0-9]+)</
+      h[:date] = $1.strip
+      h[:tested] = $2.to_i
+      h[:positive] = $3.to_i
+      h[:negative] = $4.to_i
+    else
+      @errors << "parse failed"
+    end
+    h
+  end
 
   def parse_la(h)
     if @s =~ /There are no confirmed cases of COVID/
@@ -512,7 +557,7 @@ class Crawler
   end  
 
   def parse_mo(h)
-    if @s =~ /Laboratory-confirmed  cases in Missouri: ([^<]+)</
+    if @s =~ />Presumptive Positive cases in Missouri: ([^<]+)</
       h[:positive] = $1.to_i
     else
       @errors << "missing cases"
@@ -536,25 +581,31 @@ class Crawler
 
   def parse_mt(h)
     # TODO image at https://dphhs.mt.gov/portals/85/publichealth/images/CDEpi/DiseasesAtoZ/Coronavirus/COVID19table.png
-    @driver.navigate.to @url
     puts "stats in image for mt"
-    byebug if USER_FLAG
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug 
+    end
     h
   end  
 
   def parse_nc(h)
     # TODO link
-    @driver.navigate.to @url
     puts "link has no data for nc"
-    byebug if USER_FLAG
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug 
+    end
     h
   end
 
   def parse_nd(h)
     # TODO weird js
-    @driver.navigate.to @url
     puts "challenging js for nd"
-    byebug if USER_FLAG
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug 
+    end
     h
   end  
 
@@ -564,7 +615,7 @@ class Crawler
     else
       @errors << "missing date"
     end
-    if @s =~ /Nebraska Case Information<\/h2><ul><li>Number of confirmed cases – ([^<]+)<\/li><li>Case undergoing further testing at the Nebraska Public Health Lab - ([^<]+)<\/li><\/ul><ul><li>Cases that tested negative – ([^<]+)<\/li><\/ul><p>/
+    if @s =~ /Nebraska Case Information<\/h2><ul><li>Number of confirmed cases – ([^<]+)<\/li><li>Cases undergoing further testing at the Nebraska Public Health Lab - ([^<]+)<\/li><\/ul><ul><li>Cases that tested negative – ([^<]+)<\/li><\/ul><p>/
       h[:positive] = $1.to_i
       h[:negative] = $3.to_i
       h[:tested] = $2.to_i + h[:positive] + h[:negative]
@@ -603,10 +654,32 @@ class Crawler
   end
 
   def parse_nj(h)
-    # TODO link
-    @driver.navigate.to @url
-    puts "no link for nj"
-    byebug if USER_FLAG
+    rows = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
+    if rows[2] == 'Negative'
+      h[:negative] = rows[3].to_i
+    else
+      @errors << "missing negative"
+    end
+    if rows[4] == "PresumptivePositive*"
+      h[:positive] = rows[5].to_i
+    else
+      @errors << "missing positive"
+    end
+    if rows[6] == "Total"
+      h[:tested] = rows[7].to_i
+    else
+      @errors << "missing tested"
+    end
+    if rows[8] == "Tests inProcess"
+      h[:pending] = rows[9].to_i
+    else
+      @errors << "missing pending"
+    end
+    if rows[10] == "PersonsUnderInvestigation(PUI)"
+      h[:pui] = rows[11].to_i
+    else
+      @errors << "missing pui"
+    end
     h
   end
 
@@ -818,6 +891,20 @@ class Crawler
     h
   end  
 
+  def parse_pa(h)
+    if @s =~ />PA COVID-19 Update – ([^<]+)</
+      h[:date] = $1.strip
+    else
+      @errors << "missing date"
+    end
+    if @s =~ />To date, there are&#160\;([^\s]+) presumptive positive cases of COVID-19 in Pennsylvania.</
+      h[:positive] = $1.to_i
+    else
+      @errors << "parse failed"
+    end
+    h
+  end
+
   def parse_ri(h)
     @driver.navigate.to @url
     sleep(5)
@@ -879,14 +966,16 @@ class Crawler
 
   def parse_va(h)
     # TODO js without csv download, only pdf download
-    @driver.navigate.to @url
     puts "js with pdf download for va"
-    byebug if USER_FLAG
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug 
+    end
     h
   end  
 
   def parse_vt(h)
-    if @s =~ /<p>This information is updated daily by 1:00 P.M.<br \/>\n([^<]+)<\/p>/
+    if @s =~ />\nLast updated: ([^<]+)</
       h[:date] = $1.strip
     else
       @errors << "missing date"
@@ -1041,6 +1130,10 @@ class Crawler
 
   def method_missing(m, h)
     puts "skipping state: #{@st}"
+    if USER_FLAG
+      @driver.navigate.to @url
+      byebug 
+    end
     h
   end
 
