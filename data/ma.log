@@ -1,3 +1,4 @@
 {:ts=>2020-03-06 22:34:46 -0800, :st=>"ma", :date=>"March 6, 2020", :cases=>8, :error=>[]}
 {:ts=>2020-03-07 14:26:03 -0800, :st=>"ma", :date=>"March 7, 2020", :positive=>13, :error=>[]}
 {:ts=>2020-03-07 22:53:36 -0800, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :date=>"March 7, 2020", :positive=>13, :error=>[]}
+{:ts=>2020-03-08 13:29:21 -0700, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :date=>"March 8, 2020", :positive=>28, :error=>[]}

@@ -1,3 +1,4 @@
 {:ts=>2020-03-06 22:33:15 -0800, :st=>"de", :cases=>0, :tested=>10, :error=>[]}
 {:ts=>2020-03-07 14:07:58 -0800, :st=>"de", :pui=>23, :pui_cumulative=>65, :date=>"3/06/2020, 2:10 P.M", :positive=>0, :negative=>10, :pending=>0, :tested=>10, :error=>[]}
 {:ts=>2020-03-07 22:49:24 -0800, :st=>"de", :source=>"https://dhss.delaware.gov/dhss/dph/epi/2019novelcoronavirus.html", :date=>"3/06/2020, 2:10 P.M", :positive=>0, :negative=>10, :pending=>0, :tested=>10, :date_pui=>"3/06/2020", :pui=>23, :pui_cumulative=>65, :error=>[]}
+{:ts=>2020-03-08 13:27:52 -0700, :st=>"de", :source=>"https://dhss.delaware.gov/dhss/dph/epi/2019novelcoronavirus.html", :date=>"3/06/2020, 2:10 P.M", :positive=>0, :negative=>10, :pending=>0, :tested=>10, :date_pui=>"3/06/2020", :pui=>23, :pui_cumulative=>65, :error=>[]}

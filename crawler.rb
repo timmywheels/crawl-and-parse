@@ -174,11 +174,27 @@ class Crawler
   end
 
   def parse_ct(h)
-    if @s =~ /There are no confirmed cases in Connecticut at this time/
-      h[:positive] = 0
+    if @s =~ />Data updates as of ([^<]+)</
+      h[:date] = $1.strip
     else
-      @errors << "missing cases"
+      @errors << "missing date"
     end
+    if @s =~ />Number of Connecticut COVID-19 positive \(including presumptive positive cases\): <strong>([^<]+)</
+      h[:positive] = $1.strip.gsub(',','').to_i
+    else
+      @errors << "missing positive"
+    end
+    if @s =~ />Number of people who had negative test results at the Connecticut DPH State Laboratory: <strong>([^<]+)</
+      h[:negative] = $1.strip.gsub(',','').to_i
+    else
+      @errors << "missing negative"
+    end
+    if @s =~ />Number of people for whom test results are pending: <strong>([^<]+)</
+      h[:pending] = $1.strip.gsub(',','').to_i
+    else
+      @errors << "missing pending"
+    end
+    h[:tested] = h[:positive] + h[:negative] + h[:pending]
     h
   end
 
@@ -298,11 +314,10 @@ class Crawler
   end # parse_fl
 
   def parse_ga(h)
-    # TODO
-    puts "link has no data for ga"
-    if USER_FLAG
-      @driver.navigate.to @url
-      byebug
+    if @s =~ /Currently, there are ([^\s]+) confirmed cases of COVID-19 in Georgia/
+      h[:positive] = string_to_i($1)
+    else
+      @errors << "missing cases"
     end
     h
   end
@@ -752,6 +767,13 @@ class Crawler
     else
       @errors << "missing date"
     end
+    rows = @doc.css('table')[0].text.gsub("\r","").split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+    if rows[-2] == "Total Positive Cases (Statewide)"
+      h[:positive] = rows[-1].to_i
+    else
+      @errors << "missing positive"
+    end
+=begin
     cols = @doc.css('table')[0].css('tr')[1].text.gsub("\r",'').split("\n")
     if cols[1] != "Positive Cases" || cols.size != 5 ||
       (@doc.css('table')[0].css('tr')[0].text.gsub("\r",'').split("\n") != 
@@ -790,6 +812,7 @@ class Crawler
       @errors << "missing pending, removed on 3/7/2020"
       h[:tested] = nil
     end
+=end
     rescue => e
       @errors << "rescue ny: #{e.inspect}"
     end
@@ -981,23 +1004,23 @@ class Crawler
       @errors << "missing date"
     end
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if rows[0] == "Vermonters being monitored"
-      h[:pui] = rows[1].to_i
+    if i = rows.find_index("Vermonters being monitored")
+      h[:pui] = rows[i+1].to_i
     else
       @errors << "missing monitored"
     end
-    if rows[2] == "Vermonters who have completed monitoring"
-      h[:pui_cumulative] = rows[3].to_i + h[:pui]
+    if i = rows.find_index("Vermonters who have completed monitoring")
+      h[:pui_cumulative] = rows[i+1].to_i + h[:pui]
     else
       @errors << "missing pui cumulative"
     end
-    if rows[4] == "Vermonters tested negative for COVID-19"
-      h[:negative] = rows[5].to_i
+    if i = rows.find_index("Vermonters tested negative for COVID-19")
+      h[:negative] = rows[i+1].to_i
     else
       @errors << "missing negative"
     end
-    if rows[6] == "Vermont cases of COVID-19"
-      h[:positive] = rows[7].to_i
+    if i = rows.find_index("Vermont cases of COVID-19")
+      h[:positive] = rows[i+1].to_i
     else
       @errors << "missing positive"
     end

@@ -1,3 +1,4 @@
 {:ts=>2020-03-06 22:32:33 -0800, :st=>"ak", :date=>"March 6, 2020", :current=>"0", :cases=>0, :pui=>2, :tested=>14, :error=>[]}
 {:ts=>2020-03-07 14:07:26 -0800, :st=>"ak", :date=>"March 7, 2020", :current_positive=>0, :positive=>0, :pui=>6, :tested=>20, :pui_cumulative=>20, :error=>[]}
 {:ts=>2020-03-07 22:48:56 -0800, :st=>"ak", :source=>"http://dhss.alaska.gov/dph/Epi/id/Pages/COVID-19/monitoring.aspx", :date=>"March 7, 2020", :current_positive=>0, :positive=>0, :pui=>6, :tested=>20, :pui_cumulative=>20, :error=>[]}
+{:ts=>2020-03-08 13:27:24 -0700, :st=>"ak", :source=>"http://dhss.alaska.gov/dph/Epi/id/Pages/COVID-19/monitoring.aspx", :date=>"March 8, 2020", :current_positive=>0, :positive=>0, :pui=>2, :tested=>23, :pui_cumulative=>23, :error=>[]}

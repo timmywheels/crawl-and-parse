@@ -1,3 +1,4 @@
 {:ts=>2020-03-06 22:36:17 -0800, :st=>"tn", :error=>[]}
 {:ts=>2020-03-07 14:35:09 -0800, :st=>"tn", :error=>[]}
 {:ts=>2020-03-07 22:55:44 -0800, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :error=>[]}
+{:ts=>2020-03-08 13:32:22 -0700, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :error=>[]}

@@ -1,3 +1,4 @@
 {:ts=>2020-03-06 22:32:33 -0800, :st=>"al", :error=>[]}
 {:ts=>2020-03-07 14:07:27 -0800, :st=>"al", :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:48:57 -0800, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 13:27:25 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
