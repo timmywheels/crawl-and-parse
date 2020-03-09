@@ -1,3 +1,5 @@
 {:ts=>2020-03-07 15:15:09 -0800, :st=>"dc", :date=>"March 7, 2020", :pui=>11, :negative=>9, :pending=>1, :positive=>1, :tested=>11, :error=>[]}
 {:ts=>2020-03-07 22:49:21 -0800, :st=>"dc", :source=>"https://coronavirus.dc.gov/page/coronavirus-surveillance-data", :date=>"March 7 2020 at 9:15 pm", :pui=>11, :negative=>10, :pending=>0, :positive=>1, :positive_other_lab=>1, :tested=>11, :error=>[]}
 {:ts=>2020-03-08 13:27:49 -0700, :st=>"dc", :source=>"https://coronavirus.dc.gov/page/coronavirus-surveillance-data", :date=>"March 7 2020 at 9:15 pm", :pui=>11, :negative=>10, :pending=>0, :positive=>1, :positive_other_lab=>1, :tested=>11, :error=>[]}
+{:ts=>2020-03-08 16:52:13 -0700, :st=>"dc", :source=>"https://coronavirus.dc.gov/page/coronavirus-surveillance-data", :date=>"March 8 2020 at 6:30 pm", :pui=>18, :negative=>14, :pending=>3, :positive=>1, :positive_other_lab=>1, :tested=>18, :error=>[]}
+{:ts=>2020-03-08 17:03:22 -0700, :st=>"dc", :source=>"https://coronavirus.dc.gov/page/coronavirus-surveillance-data", :date=>"March 8 2020 at 6:30 pm", :pui=>18, :negative=>14, :pending=>3, :positive=>1, :positive_other_lab=>1, :tested=>18, :error=>[]}

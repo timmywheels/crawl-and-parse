@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:27:32 -0800, :st=>"nd", :date=>"3/6/2020", :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:54:42 -0800, :st=>"nd", :source=>"https://www.health.nd.gov/diseases-conditions/coronavirus/north-dakota-coronavirus-cases", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 13:30:43 -0700, :st=>"nd", :source=>"https://www.health.nd.gov/diseases-conditions/coronavirus/north-dakota-coronavirus-cases", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 16:54:39 -0700, :st=>"nd", :source=>"https://www.health.nd.gov/diseases-conditions/coronavirus/north-dakota-coronavirus-cases", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 17:05:39 -0700, :st=>"nd", :source=>"https://www.health.nd.gov/diseases-conditions/coronavirus/north-dakota-coronavirus-cases", :positive=>0, :error=>[]}

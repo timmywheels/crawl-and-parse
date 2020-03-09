@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:34:59 -0800, :st=>"ri", :positive=>2, :error=>[]}
 {:ts=>2020-03-07 22:55:23 -0800, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
 {:ts=>2020-03-08 13:32:01 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
+{:ts=>2020-03-08 16:57:58 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
+{:ts=>2020-03-08 17:06:23 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}

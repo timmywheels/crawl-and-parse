@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:35:10 -0800, :st=>"ut", :positive=>1, :error=>[]}
 {:ts=>2020-03-07 22:55:59 -0800, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 13:32:37 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 16:58:20 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 17:06:44 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}

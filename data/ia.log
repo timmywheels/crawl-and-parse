@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:24:13 -0800, :st=>"ia", :date=>"March 6, 2020", :tested=>17, :negative=>15, :pending=>2, :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:49:53 -0800, :st=>"ia", :source=>"https://idph.iowa.gov/Emerging-Health-Issues/Novel-Coronavirus", :tested=>17, :pending=>2, :negative=>15, :positive=>0, :error=>[]}
 {:ts=>2020-03-08 13:28:04 -0700, :st=>"ia", :source=>"https://idph.iowa.gov/Emerging-Health-Issues/Novel-Coronavirus", :tested=>17, :negative=>15, :pending=>2, :positive=>0, :error=>[]}
+{:ts=>2020-03-08 16:52:25 -0700, :st=>"ia", :source=>"https://idph.iowa.gov/Emerging-Health-Issues/Novel-Coronavirus", :tested=>37, :positive=>3, :negative=>26, :pending=>8, :error=>[]}
+{:ts=>2020-03-08 17:03:34 -0700, :st=>"ia", :source=>"https://idph.iowa.gov/Emerging-Health-Issues/Novel-Coronavirus", :pending=>8, :tested=>37, :positive=>3, :negative=>26, :error=>[]}

@@ -27,17 +27,29 @@ for file in `ls data/*.log`.split("\n")
     raise unless source
 
     if tested
-      h_latest[:tested] = tested
+      if h_latest[:tested] && h_latest[:tested].to_i > tested.to_i
+        byebug
+      else
+        h_latest[:tested] = tested
+      end
       h_latest[:tested_date] = date || ts
       h_latest[:tested_source] = source
     end
     if positive
-      h_latest[:positive] = positive
+      if h_latest[:positive] && h_latest[:positive].to_i > positive.to_i
+        byebug
+      else
+        h_latest[:positive] = positive
+      end
       h_latest[:positive_date] = date || ts
       h_latest[:positive_source] = source
     end
-    if deaths
-      h_latest[:deaths] = deaths
+    if deaths 
+      if h_latest[:deaths] && h_latest[:deaths].to_i > deaths.to_i
+        byebug
+      else
+        h_latest[:deaths] = deaths
+      end
       h_latest[:deaths_date] = date || ts
       h_latest[:deaths_source] = source
     end

@@ -3,7 +3,7 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = true # saves output to "debug/" dir
+DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
 DEBUG_ST = nil  # run for a single state
@@ -29,8 +29,10 @@ class Crawler
     end
     if @s =~ /Persons Under Investigation \(PUI\)\*<\/a><\/h4>\r\n<ul><li><strong>Current: ([^\s]+) \(pending tests\)<\/strong><\/li>\r\n<li>Cumulative since 1\/1\/2020: ([^\s]+) /
       h[:pui] = $1.to_i
+      h[:pending] = h[:pui]
       h[:tested] = $2.to_i
       h[:pui_cumulative] = h[:tested]
+      h[:negative] = h[:tested] - h[:positive] - h[:pending] # TODO PUI might not mean all tested
     else
       @errors << "missing pui"
     end
@@ -47,11 +49,13 @@ class Crawler
     end
     rows = @doc.css('table')[1].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     h[:pui] = rows[-1].to_i
+    h[:pending] = h[:pui]
     rows = @doc.css('table')[2].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     h[:monitored] = rows[-1].split("\s")[0].to_i
     s = (@doc.css('table')[3].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0})[-1]
     if s.gsub(',','') =~ /([0-9]+) negative test/
-      h[:tested] = $1.to_i
+      h[:negative] = $1.to_i
+      h[:tested] = h[:negative]
       h[:pui_cumulative] = h[:tested]
     else
       @errors << "missing tested"
@@ -94,9 +98,11 @@ class Crawler
         @errors << "missing presumptive"
       end
       h[:pui] = rows[3][1].to_i
+      h[:pending] = h[:pui]
       if rows[3][0] != "Number of Pending"
         @errors << "missing pending"
       end
+      h[:negative] = rows[4][1].to_i
       rows = open('/Users/danny/Downloads/Cases_crosstab.csv').readlines.map {|i| i.strip.split("\t")}
       h[:positive] = rows[3][1].to_i + rows[3][2].to_i
       if rows[3][0] != "Total Cases"
@@ -167,6 +173,7 @@ class Crawler
       h[:positive] = $1.to_i
       h[:negative] = $2.to_i
       h[:tested] = $3.to_i
+      h[:pending] = 0
     else
       @errors << "missing tests"
     end
@@ -179,21 +186,17 @@ class Crawler
     else
       @errors << "missing date"
     end
-    if @s =~ />Number of Connecticut COVID-19 positive \(including presumptive positive cases\): <strong>([^<]+)</
-      h[:positive] = $1.strip.gsub(',','').to_i
-    else
-      @errors << "missing positive"
+    rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+    begin
+      h[:positive] = rows.select {|i| i=~ /Total.*positive cases/}[0].split("\s").last.gsub(',','').to_i
+      h[:negative] = rows.select {|i| i=~ /Total number of people with negative test results/}[0].split("\s").last.gsub(',','').to_i
+      if rows.select {|i| i=~ /ending/}.size > 0
+        @errors << 'missing pending'
+      end
+    rescue => e
+      @errors << e.inspect
     end
-    if @s =~ />Number of people who had negative test results at the Connecticut DPH State Laboratory: <strong>([^<]+)</
-      h[:negative] = $1.strip.gsub(',','').to_i
-    else
-      @errors << "missing negative"
-    end
-    if @s =~ />Number of people for whom test results are pending: <strong>([^<]+)</
-      h[:pending] = $1.strip.gsub(',','').to_i
-    else
-      @errors << "missing pending"
-    end
+    h[:pending] = 0
     h[:tested] = h[:positive] + h[:negative] + h[:pending]
     h
   end
@@ -201,7 +204,7 @@ class Crawler
   def parse_dc(h)
     @driver.navigate.to @url
     @s = @driver.find_elements(class: 'field-items')[0].text
-    if @s.gsub(',','') =~ /Update: ([^\n]+)\nNumber of patients being monitored by DC Health and tested for COVID\-19 \(PUIs\): ([0-9]+)\nNumber of negative results: ([0-9]+)\nNumber of pending results: ([0-9]+)\nNumber of presumptive positive results: ([0-9]+)\nNumber of presumptive positive results from other lab: ([0-9]+)/
+    if @s.gsub(',','') =~ /Update: ([^\n]+)\nNumber of patients under investigation for COVID\-19: ([0-9]+)\nNumber of negative results: ([0-9]+)\nNumber of pending results: ([0-9]+)\nNumber of presumptive positive results: ([0-9]+)\nNumber of presumptive positive results from other lab: ([0-9]+)/
       h[:date] = $1.strip
       h[:pui] = $2.to_i
       h[:negative] = $3.to_i
@@ -272,19 +275,19 @@ class Crawler
           @errors << "missing deaths"
         end
         h[:positive] = 0
-        if @s =~ /\n([^\s]+) – Florida Residents\n/
+        if @s =~ /\n([^\s]+) – Florida Residents/
           h[:positive] += $1.to_i
         end
-        if @s =~ /\n([^\s]+) – Florida Resident Presumptive Positive\n/
+        if @s =~ /\n([^\s]+) – Florida Resident Presumptive Positive/
           h[:positive] += $1.to_i
         end
-        if @s =~ /\n([^\s]+) – Florida Cases Repatriated\n/
+        if @s =~ /\n([^\s]+) – Florida Cases Repatriated/
           h[:positive] += $1.to_i
         end
-        if @s =~ /\n([^\s]+) – Non-Florida resident\n/
+        if @s =~ /\n([^\s]+) – Non-Florida resident/
           h[:positive] += $1.to_i
         end
-        if h[:positive] < 13 # as of 3/7/2020
+        if h[:positive] < 18 # as of 3/8/2020
           @errors << "missing cases"
         end
         if @s =~ /\n Number of Negative Test Results\n([^\s]+)\n/
@@ -399,6 +402,7 @@ class Crawler
     end
     if rows[7] == "PUIs Pending"
       h[:pui] = rows[8].to_i
+      h[:pending] = h[:pui]
     else
       @errors << "missing pending"
     end
@@ -425,11 +429,12 @@ class Crawler
   end
 
   def parse_ky(h)
-    if @s =~ /Current as of (.*) at&#160\;<br>4&#58\;30 p.m.&#160\;Eastern time<br><br>Kentucky Coronavirus Monitoring<\/strong><br>Number Tested&#58\; ([0-9]+)<br>Positive&#58\;&#160\;([0-9]+)&#160\;<br>Negative&#58\; ([0-9]+)</
+    if @doc.text =~ /Current as of ([^\.]+)\.m. Eastern timeKentucky Coronavirus MonitoringNumber Tested: ([0-9,]+)Positive: ([0-9,]+) Negative: ([0-9,]+)Note:/
       h[:date] = $1.strip
       h[:tested] = $2.to_i
       h[:positive] = $3.to_i
       h[:negative] = $4.to_i
+      h[:pending] = 0
     else
       @errors << "parse failed"
     end
@@ -478,6 +483,7 @@ class Crawler
       h[:pending] = $1.to_i
     else
       @errors << "missing pending"
+      h[:pending] = 0
     end
     if @s =~ />Number of negative COVID-19 tests: ([^<]+)</
       h[:negative] = $1.to_i
@@ -489,6 +495,7 @@ class Crawler
     else
       @errors << "missing cases"
     end
+    h[:tested] = h[:positive] + h[:negative] + h[:pending] unless h[:tested]
     h
   end
 
@@ -563,6 +570,7 @@ class Crawler
     else
       @errors << "missing total"
     end
+    h[:pending] = 0
     if @s =~ /Patients tested<\/strong><br>\r\nAs of ([^<]+)/
       h[:date] = $1
     else
@@ -633,7 +641,8 @@ class Crawler
     if @s =~ /Nebraska Case Information<\/h2><ul><li>Number of confirmed cases – ([^<]+)<\/li><li>Cases undergoing further testing at the Nebraska Public Health Lab - ([^<]+)<\/li><\/ul><ul><li>Cases that tested negative – ([^<]+)<\/li><\/ul><p>/
       h[:positive] = $1.to_i
       h[:negative] = $3.to_i
-      h[:tested] = $2.to_i + h[:positive] + h[:negative]
+      h[:pending] = $2.to_i
+      h[:tested] = h[:pending] + h[:positive] + h[:negative]
     else
       @errors << "missing cases"
     end
@@ -670,28 +679,33 @@ class Crawler
 
   def parse_nj(h)
     rows = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
-    if rows[2] == 'Negative'
-      h[:negative] = rows[3].to_i
+    if i = rows.find_index('Negative')
+      h[:negative] = rows[i+1].to_i
     else
       @errors << "missing negative"
     end
-    if rows[4] == "PresumptivePositive*"
-      h[:positive] = rows[5].to_i
+    if i = rows.find_index("PresumptivePositive*")
+      h[:positive] = rows[i+1].to_i
     else
       @errors << "missing positive"
     end
-    if rows[6] == "Total"
-      h[:tested] = rows[7].to_i
+    if i = rows.find_index("CDC Confirmed Positive")
+      h[:positive] += rows[i+1].to_i
+    else
+      @errors << "missing positive2"
+    end
+    if i = rows.find_index("Total")
+      h[:tested] = rows[i+1].to_i
     else
       @errors << "missing tested"
     end
-    if rows[8] == "Tests inProcess"
-      h[:pending] = rows[9].to_i
+    if i = rows.find_index("Tests inProcess")
+      h[:pending] = rows[i+1].to_i
     else
       @errors << "missing pending"
     end
-    if rows[10] == "PersonsUnderInvestigation(PUI)"
-      h[:pui] = rows[11].to_i
+    if i = rows.find_index("PersonsUnderInvestigation(PUI)")
+      h[:pui] = rows[i+1].to_i
     else
       @errors << "missing pui"
     end
@@ -725,6 +739,7 @@ class Crawler
     else
       @errors << "missing tested"
     end
+    h[:pending] = 0
     h
   end
 
@@ -757,6 +772,7 @@ class Crawler
     else
       @errors << "missing pui_neg"
     end
+    h[:pending] = 0
     h
   end
 
@@ -828,6 +844,7 @@ class Crawler
     end
     if rows[3] =~ /\(PUIs\)1 in Ohio: (.+)/
       h[:pui] = $1.to_i
+      h[:pending] = h[:pui]
     else
       @errors << "missing pui"
     end
@@ -865,6 +882,7 @@ class Crawler
     end
     if rows[6] == "PUIs Pending Results"
       h[:pui] = rows[7].to_i
+      h[:pending] = h[:pui]
     else
       @errors << "missing pui"
     end
@@ -967,6 +985,16 @@ class Crawler
     h
   end  
 
+  def parse_tn(h)
+    if @s =~ /are ([^\s]+) COVID-19 cases in Tennessee as of ([^<]+)</
+      h[:positive] = string_to_i($1)
+      h[:date] = $2
+    else
+      @errors << "failed to parse"
+    end
+    h
+  end
+
   def parse_tx(h)
     # TODO each row is # of cases for a county, only parsing Total currently 
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}
@@ -1024,6 +1052,7 @@ class Crawler
     else
       @errors << "missing positive"
     end
+    h[:pending] = 0
     h[:tested] = h[:negative] + h[:positive]
     h
   end
@@ -1034,6 +1063,7 @@ class Crawler
     else
       @errors << "missing date"
     end
+=begin
     # 3/7/2020 this was removed
     if i = (@s =~ /Number of people under public health supervision/)
       if @s[i..(i+1000)].split("\n")[1] =~ /<td>(.+)<\/td>/
@@ -1044,6 +1074,7 @@ class Crawler
     else
       @errors << "missing monitoring, removed on 3/7/2020"
     end
+=end
     if @doc.css('table')[0] && (rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}) && rows[-3] == 'Total'
       # TODO parse each county
       h[:positive] = rows[-2].to_i
@@ -1051,6 +1082,15 @@ class Crawler
     else
       @errors << "missing totals"
     end    
+    rows = @doc.css('table')[3].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+    byebug if rows.size != 5
+    if i = rows.find_index('Negative')
+      h[:negative] = rows[i+1].gsub(',','').to_i 
+      h[:pending] = 0
+      h[:tested] = h[:negative] + h[:positive]
+    else
+      @errors << 'missing negative'
+    end
     h
   end
 
@@ -1180,6 +1220,14 @@ class Crawler
       h = send("parse_#{@st}", h)
       open("#{@path}#{@st}/#{Time.now.to_s[0..18].gsub(' ','_')}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
+      count = 0
+      count += 1 if h[:tested]
+      count += 1 if h[:positive]
+      count += 1 if h[:negative]
+      count += 1 if h[:pending]
+      byebug if count == 3
+      byebug if count == 4 && (h[:tested] != (h[:positive] + h[:negative] + h[:pending]))
+
       positive[:all] += h[:positive].to_i
       positive[@st.to_sym] = h[:positive]
 
@@ -1203,8 +1251,11 @@ class Crawler
 
       if DEBUG_PAGE_FLAG
         @driver.navigate.to @url
+        puts
         puts @st
         puts h.inspect
+        puts
+        puts({:tested => h[:tested], :pos => h[:positive], :neg => h[:negative], :pending => h[:pending]}.inspect)
         byebug
       end
       h_all << h  

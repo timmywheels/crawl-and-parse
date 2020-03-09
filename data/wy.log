@@ -2,3 +2,4 @@
 {:ts=>2020-03-07 14:36:50 -0800, :st=>"wy", :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:57:18 -0800, :st=>"wy", :source=>"https://health.wyo.gov/publichealth/infectious-disease-epidemiology-unit/disease/novel-coronavirus/", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 13:34:02 -0700, :st=>"wy", :source=>"https://health.wyo.gov/publichealth/infectious-disease-epidemiology-unit/disease/novel-coronavirus/", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 17:07:32 -0700, :st=>"wy", :source=>"https://health.wyo.gov/publichealth/infectious-disease-epidemiology-unit/disease/novel-coronavirus/", :positive=>0, :error=>[]}

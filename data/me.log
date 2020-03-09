@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:26:21 -0800, :st=>"me", :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:53:47 -0800, :st=>"me", :source=>"https://www.maine.gov/dhhs/mecdc/health-advisory.shtml?id=2182936", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 13:29:59 -0700, :st=>"me", :source=>"https://www.maine.gov/dhhs/mecdc/health-advisory.shtml?id=2182936", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 16:53:50 -0700, :st=>"me", :source=>"https://www.maine.gov/dhhs/mecdc/health-advisory.shtml?id=2182936", :positive=>0, :error=>[]}
+{:ts=>2020-03-08 17:04:49 -0700, :st=>"me", :source=>"https://www.maine.gov/dhhs/mecdc/health-advisory.shtml?id=2182936", :positive=>0, :error=>[]}

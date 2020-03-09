@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:24:13 -0800, :st=>"hi", :positive=>0, :pui=>90, :pui_cumulative=>1, :quarantined=>0, :monitored=>90, :date=>"March 1, 2020", :error=>[]}
 {:ts=>2020-03-07 22:49:53 -0800, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 13:28:03 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 16:52:24 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 17:03:34 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}

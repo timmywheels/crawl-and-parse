@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:28:24 -0800, :st=>"ne", :positive=>1, :negative=>17, :tested=>23, :error=>["missing date"]}
 {:ts=>2020-03-07 22:54:56 -0800, :st=>"ne", :source=>"http://dhhs.ne.gov/Pages/Coronavirus.aspx", :date=>"March 7, 2020", :positive=>1, :negative=>17, :tested=>23, :error=>[]}
 {:ts=>2020-03-08 13:31:06 -0700, :st=>"ne", :source=>"http://dhhs.ne.gov/Pages/Coronavirus.aspx", :date=>"March 7, 2020", :positive=>1, :negative=>17, :tested=>23, :error=>[]}
+{:ts=>2020-03-08 16:54:53 -0700, :st=>"ne", :source=>"http://dhhs.ne.gov/Pages/Coronavirus.aspx", :date=>"March 7, 2020", :positive=>1, :negative=>17, :pending=>5, :tested=>23, :error=>[]}
+{:ts=>2020-03-08 17:05:49 -0700, :st=>"ne", :source=>"http://dhhs.ne.gov/Pages/Coronavirus.aspx", :date=>"March 8, 2020", :positive=>3, :negative=>30, :pending=>17, :tested=>50, :error=>[]}

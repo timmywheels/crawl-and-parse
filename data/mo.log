@@ -2,3 +2,5 @@
 {:ts=>2020-03-07 14:26:22 -0800, :st=>"mo", :positive=>0, :error=>[]}
 {:ts=>2020-03-07 22:53:48 -0800, :st=>"mo", :source=>"https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 13:30:00 -0700, :st=>"mo", :source=>"https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 16:53:52 -0700, :st=>"mo", :source=>"https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 17:04:50 -0700, :st=>"mo", :source=>"https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/", :positive=>1, :error=>[]}
