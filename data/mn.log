@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:29:59 -0700, :st=>"mn", :source=>"https://www.health.state.mn.us/diseases/coronavirus/situation.html", :positive=>1, :negative=>48, :tested=>49, :date=>"March 6, 2020 at 3:00 p.m.", :error=>[]}
 {:ts=>2020-03-08 16:53:51 -0700, :st=>"mn", :source=>"https://www.health.state.mn.us/diseases/coronavirus/situation.html", :positive=>1, :negative=>48, :tested=>49, :pending=>0, :date=>"March 6, 2020 at 3:00 p.m.", :error=>[]}
 {:ts=>2020-03-08 17:04:50 -0700, :st=>"mn", :source=>"https://www.health.state.mn.us/diseases/coronavirus/situation.html", :positive=>1, :negative=>48, :tested=>49, :pending=>0, :date=>"March 6, 2020 at 3:00 p.m.", :error=>[]}
+{:ts=>2020-03-08 22:03:12 -0700, :st=>"mn", :source=>"https://www.health.state.mn.us/diseases/coronavirus/situation.html", :positive=>2, :negative=>78, :tested=>80, :pending=>0, :date=>"March 8, 2020 at 7:00 p.m.", :error=>[]}

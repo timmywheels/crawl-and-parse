@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:28:50 -0700, :st=>"id", :source=>"https://healthandwelfare.idaho.gov/COVID19/tabid/4664/Default.aspx", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}
 {:ts=>2020-03-08 16:53:13 -0700, :st=>"id", :source=>"https://healthandwelfare.idaho.gov/COVID19/tabid/4664/Default.aspx", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}
 {:ts=>2020-03-08 17:04:16 -0700, :st=>"id", :source=>"https://healthandwelfare.idaho.gov/COVID19/tabid/4664/Default.aspx", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}
+{:ts=>2020-03-08 22:02:25 -0700, :st=>"id", :source=>"https://healthandwelfare.idaho.gov/COVID19/tabid/4664/Default.aspx", :positive=>0, :monitored_done=>36, :pui_cumulative=>27, :tested=>27, :date=>"3/6/2020", :error=>[]}

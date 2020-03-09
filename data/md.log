@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:29:23 -0700, :st=>"md", :source=>"https://phpa.health.maryland.gov/Pages/Novel-coronavirus.aspx", :negative=>52, :positive=>3, :error=>["missing tested", "missing pending"], :tested=>55}
 {:ts=>2020-03-08 16:53:31 -0700, :st=>"md", :source=>"https://phpa.health.maryland.gov/Pages/Novel-coronavirus.aspx", :pending=>0, :negative=>52, :positive=>3, :tested=>55, :error=>["missing tested", "missing pending"]}
 {:ts=>2020-03-08 17:04:37 -0700, :st=>"md", :source=>"https://phpa.health.maryland.gov/Pages/Novel-coronavirus.aspx", :pending=>0, :negative=>52, :positive=>3, :tested=>55, :error=>["missing tested", "missing pending"]}
+{:ts=>2020-03-08 22:02:58 -0700, :st=>"md", :source=>"https://phpa.health.maryland.gov/Pages/Novel-coronavirus.aspx", :pending=>0, :negative=>52, :positive=>3, :tested=>55, :error=>["missing tested", "missing pending"]}

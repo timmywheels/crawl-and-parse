@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:29:20 -0700, :st=>"ky", :source=>"https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx", :date=>"March 7, 2020", :tested=>14, :positive=>1, :negative=>13, :error=>[]}
 {:ts=>2020-03-08 16:53:28 -0700, :st=>"ky", :source=>"https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx", :date=>"March 8, 2020 at 5:30 p", :tested=>21, :positive=>4, :negative=>17, :pending=>0, :error=>[]}
 {:ts=>2020-03-08 17:04:34 -0700, :st=>"ky", :source=>"https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx", :date=>"March 8, 2020 at 5:30 p", :tested=>21, :positive=>4, :negative=>17, :pending=>0, :error=>[]}
+{:ts=>2020-03-08 22:02:54 -0700, :st=>"ky", :source=>"https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx", :date=>"March 8, 2020 at 5:30 p", :tested=>21, :positive=>4, :negative=>17, :pending=>0, :error=>[]}

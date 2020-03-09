@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:29:59 -0700, :st=>"mi", :source=>"https://www.michigan.gov/coronavirus", :date=>"3/7/2020", :pui=>28, :negative=>26, :positive=>0, :pending=>10, :pui_cumulative=>429, :monitored=>97, :tested=>36, :error=>[]}
 {:ts=>2020-03-08 16:53:51 -0700, :st=>"mi", :source=>"https://www.michigan.gov/coronavirus", :date=>"3/8/2020", :pui=>47, :negative=>36, :positive=>0, :pending=>11, :pui_cumulative=>440, :monitored=>88, :tested=>47, :error=>[]}
 {:ts=>2020-03-08 17:04:50 -0700, :st=>"mi", :source=>"https://www.michigan.gov/coronavirus", :date=>"3/8/2020", :pui=>47, :negative=>36, :positive=>0, :pending=>11, :pui_cumulative=>440, :monitored=>88, :tested=>47, :error=>[]}
+{:ts=>2020-03-08 22:03:12 -0700, :st=>"mi", :source=>"https://www.michigan.gov/coronavirus", :date=>"3/8/2020", :pui=>47, :negative=>36, :positive=>0, :pending=>11, :pui_cumulative=>440, :monitored=>88, :tested=>47, :error=>[]}

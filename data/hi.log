@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:28:03 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 16:52:24 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 17:03:34 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}
+{:ts=>2020-03-08 22:00:20 -0700, :st=>"hi", :source=>"https://health.hawaii.gov/docd/advisories/novel-coronavirus-2019/", :positive=>1, :error=>[]}

@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:32:21 -0700, :st=>"sd", :source=>"https://doh.sd.gov/news/Coronavirus.aspx", :positive=>0, :tested=>5, :negative=>5, :pending=>0, :date=>"March 6, 2020", :error=>[]}
 {:ts=>2020-03-08 16:58:11 -0700, :st=>"sd", :source=>"https://doh.sd.gov/news/Coronavirus.aspx", :positive=>0, :tested=>5, :negative=>5, :pending=>0, :date=>"March 6, 2020", :error=>[]}
 {:ts=>2020-03-08 17:06:36 -0700, :st=>"sd", :source=>"https://doh.sd.gov/news/Coronavirus.aspx", :positive=>0, :tested=>5, :negative=>5, :pending=>0, :date=>"March 6, 2020", :error=>[]}
+{:ts=>2020-03-08 22:05:09 -0700, :st=>"sd", :source=>"https://doh.sd.gov/news/Coronavirus.aspx", :positive=>0, :tested=>5, :negative=>5, :pending=>0, :date=>"March 6, 2020", :error=>[]}

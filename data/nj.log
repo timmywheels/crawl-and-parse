@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:31:07 -0700, :st=>"nj", :source=>"https://www.nj.gov/health/", :negative=>31, :positive=>6, :error=>["missing tested", "missing pending", "missing pui"], :tested=>37}
 {:ts=>2020-03-08 16:54:54 -0700, :st=>"nj", :source=>"https://www.nj.gov/health/", :negative=>31, :positive=>6, :tested=>37, :pending=>0, :pui=>27, :error=>[]}
 {:ts=>2020-03-08 17:05:51 -0700, :st=>"nj", :source=>"https://www.nj.gov/health/", :negative=>31, :positive=>6, :tested=>37, :pending=>0, :pui=>27, :error=>[]}
+{:ts=>2020-03-08 22:04:15 -0700, :st=>"nj", :source=>"https://www.nj.gov/health/", :negative=>31, :positive=>6, :tested=>37, :pending=>0, :pui=>27, :error=>[]}

@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:28:57 -0700, :st=>"ks", :source=>"http://www.kdheks.gov/coronavirus/index.htm", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 16:53:21 -0700, :st=>"ks", :source=>"http://www.kdheks.gov/coronavirus/index.htm", :error=>[]}
 {:ts=>2020-03-08 17:04:23 -0700, :st=>"ks", :source=>"http://www.kdheks.gov/coronavirus/index.htm", :error=>[]}
+{:ts=>2020-03-08 22:02:32 -0700, :st=>"ks", :source=>"http://www.kdheks.gov/coronavirus/index.htm", :positive=>1, :error=>[]}

@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:32:37 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
 {:ts=>2020-03-08 16:58:18 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
 {:ts=>2020-03-08 17:06:44 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
+{:ts=>2020-03-08 22:05:11 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}

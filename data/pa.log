@@ -4,3 +4,4 @@
 {:ts=>2020-03-08 13:32:01 -0700, :st=>"pa", :source=>"https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx", :date=>"March 8,&#160;2020", :positive=>4, :error=>[]}
 {:ts=>2020-03-08 16:57:57 -0700, :st=>"pa", :source=>"https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx", :date=>"March 8,&#160;2020", :positive=>6, :error=>[]}
 {:ts=>2020-03-08 17:06:23 -0700, :st=>"pa", :source=>"https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx", :date=>"March 8,&#160;2020", :positive=>6, :error=>[]}
+{:ts=>2020-03-08 22:04:48 -0700, :st=>"pa", :source=>"https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx", :date=>"March 8,&#160;2020", :positive=>6, :error=>[]}
