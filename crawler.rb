@@ -3,7 +3,7 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = false # saves output to "debug/" dir
+DEBUG_FLAG = true # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
 DEBUG_ST = nil  # run for a single state
@@ -613,11 +613,16 @@ class Crawler
   end  
 
   def parse_nc(h)
-    # TODO link
-    puts "link has no data for nc"
-    if USER_FLAG
-      @driver.navigate.to @url
-      byebug 
+    if @s =~ /Updated: (.*) Presumptive Positive - A positive/
+      h[:date] = $1
+    else
+      @errors << 'missing date'
+    end
+    rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
+    if i = rows.find_index("TOTAL")
+      h[:positive] = rows[i+1].to_i
+    else
+      @errors << "missing positive"
     end
     h
   end
