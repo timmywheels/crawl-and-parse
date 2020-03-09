@@ -181,23 +181,23 @@ class Crawler
   end
 
   def parse_ct(h)
-    if @s =~ />Data updates as of ([^<]+)</
+    if @s =~ />Data updates from the Connecticut Department of Public Health State Laboratory as of ([^<]+)</
       h[:date] = $1.strip
     else
       @errors << "missing date"
     end
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     begin
-      h[:positive] = rows.select {|i| i=~ /Total.*positive cases/}[0].split("\s").last.gsub(',','').to_i
-      h[:negative] = rows.select {|i| i=~ /Total number of people with negative test results/}[0].split("\s").last.gsub(',','').to_i
+      h[:positive] = rows.select {|i| i=~ /Total patients who tested positive for COVID-19/}[0].split("\s").last.gsub(',','').to_i
+      h[:negative] = rows.select {|i| i=~ /who tested negative for COVID-1/}[0].split("\s").last.gsub(',','').to_i
       if rows.select {|i| i=~ /ending/}.size > 0
         @errors << 'missing pending'
       end
+      h[:pending] = 0
+      h[:tested] = h[:positive] + h[:negative] + h[:pending]
     rescue => e
       @errors << e.inspect
     end
-    h[:pending] = 0
-    h[:tested] = h[:positive] + h[:negative] + h[:pending]
     h
   end
 
