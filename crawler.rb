@@ -41,24 +41,28 @@ class Crawler
 
   def parse_ar(h)
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if rows[0] =~ /Status Update as of (.+)/
-      h[:date] = $1
-      h[:positive] = rows[-1].to_i
+    byebug unless rows.size == 10
+    if i = rows.find_index("Confirmed Cases of COVID-19 in Arkansas")
+      h[:positive] = rows[i+1].to_i
     else
-      @errors << "missing date"
+      @errors << "missing positive"
     end
-    rows = @doc.css('table')[1].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    h[:pui] = rows[-1].to_i
-    h[:pending] = h[:pui]
-    rows = @doc.css('table')[2].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    h[:monitored] = rows[-1].split("\s")[0].to_i
-    s = (@doc.css('table')[3].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0})[-1]
-    if s.gsub(',','') =~ /([0-9]+) negative test/
-      h[:negative] = $1.to_i
-      h[:tested] = h[:negative]
-      h[:pui_cumulative] = h[:tested]
+    if i = rows.find_index("Persons Under Investigation (PUI)")
+      h[:pui] = rows[i+1].to_i
+      h[:pending] = h[:pui]
     else
-      @errors << "missing tested"
+      @errors << "missing pui"
+    end
+    if i = rows.find_index("Recent travelers being monitored with daily ADH check-in and guidance")
+      h[:monitored] = rows[i+1].to_i
+    else
+      @errors << "missing monitored"
+    end
+    if i = rows.find_index("Past PUIs with negative test results")
+      h[:negative] = rows[i+1].to_i
+      h[:tested] = h[:negative] + h[:positive]
+    else
+      @errors << "missing negative"
     end
     h
   end
@@ -317,8 +321,8 @@ class Crawler
   end # parse_fl
 
   def parse_ga(h)
-    if @s =~ /Currently, there are ([^\s]+) confirmed cases of COVID-19 in Georgia/
-      h[:positive] = string_to_i($1)
+    if @s =~ /Currently, there are ([^\s]+) confirmed and ([^\s]+) presumptive positive cases of COVID-19 in Georgia\./
+      h[:positive] = string_to_i($1) + string_to_i($2)
     else
       @errors << "missing cases"
     end
@@ -401,16 +405,16 @@ class Crawler
       @errors << "missing negative"
     end
     if rows[7] == "PUIs Pending"
-      h[:pui] = rows[8].to_i
-      h[:pending] = h[:pui]
+      h[:pending] = rows[8].to_i
     else
       @errors << "missing pending"
     end
     if rows[9] == "Total PUI"
-      h[:tested] = rows[10].to_i
+      h[:pui] = rows[10].to_i
     else
       @errors << "missing tested"
     end
+    h[:tested] = h[:positive] + h[:negative] + h[:pending]
     if @s =~ /Information regarding the number of persons under investigation updated on ([^\.]+)\./
       h[:date] = $1.strip
     else
@@ -619,10 +623,16 @@ class Crawler
       @errors << 'missing date'
     end
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
-    if i = rows.find_index("TOTAL")
+    h[:positive] = 0
+    if i = rows.find_index("Presumptive Positive")
       h[:positive] = rows[i+1].to_i
     else
-      @errors << "missing positive"
+      @errors << "missing presumptive positive"
+    end
+    if i = rows.find_index("Confirmed Positive")
+      h[:positive] += rows[i+1].to_i
+    else
+      @errors << "missing confirmed positive"
     end
     h
   end
@@ -953,7 +963,7 @@ class Crawler
 
   def parse_ri(h)
     @driver.navigate.to @url
-    sleep(5)
+    sleep(8)
     if @driver.find_elements(class: 'panel').select {|i| i.text =~ /Both individuals were on the same European trip. Being informed is an important part of being prepared. Learn more about how to prevent the spread in your community.\n\nSomeone/ }.size > 0
       h[:positive] = 2
     else

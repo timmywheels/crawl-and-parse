@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:54:53 -0700, :st=>"nh", :source=>"https://www.dhhs.nh.gov/dphs/cdcs/2019-ncov.htm", :tested=>47, :positive=>4, :pending=>5, :negative=>38, :date=>"March 8, 2020, 10:30 a.m.", :error=>[]}
 {:ts=>2020-03-08 17:05:50 -0700, :st=>"nh", :source=>"https://www.dhhs.nh.gov/dphs/cdcs/2019-ncov.htm", :tested=>47, :positive=>4, :pending=>5, :negative=>38, :date=>"March 8, 2020, 10:30 a.m.", :error=>[]}
 {:ts=>2020-03-08 22:04:15 -0700, :st=>"nh", :source=>"https://www.dhhs.nh.gov/dphs/cdcs/2019-ncov.htm", :tested=>47, :positive=>4, :pending=>5, :negative=>38, :date=>"March 8, 2020, 10:30 a.m.", :error=>[]}
+{:ts=>2020-03-09 08:41:02 -0700, :st=>"nh", :source=>"https://www.dhhs.nh.gov/dphs/cdcs/2019-ncov.htm", :tested=>47, :positive=>4, :pending=>5, :negative=>38, :date=>"March 8, 2020, 10:30 a.m.", :error=>[]}

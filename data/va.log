@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:58:21 -0700, :st=>"va", :source=>"https://vdhdata.vdh.virginia.gov/views/COVID-19inVirginia/External", :tested=>44, :positive=>2, :negative=>36, :pending=>6, :error=>[]}
 {:ts=>2020-03-08 17:06:44 -0700, :st=>"va", :source=>"https://vdhdata.vdh.virginia.gov/views/COVID-19inVirginia/External", :positive=>2, :negative=>36, :tested=>44, :pending=>6, :error=>[]}
 {:ts=>2020-03-08 22:05:12 -0700, :st=>"va", :source=>"https://vdhdata.vdh.virginia.gov/views/COVID-19inVirginia/External", :positive=>2, :tested=>44, :pending=>6, :negative=>36, :error=>[]}
+{:ts=>2020-03-09 08:42:33 -0700, :st=>"va", :source=>"https://vdhdata.vdh.virginia.gov/views/COVID-19inVirginia/External", :positive=>2, :tested=>44, :negative=>36, :pending=>6, :error=>[]}

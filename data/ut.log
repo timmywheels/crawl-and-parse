@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:58:20 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 17:06:44 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
 {:ts=>2020-03-08 22:05:11 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}
+{:ts=>2020-03-09 08:42:32 -0700, :st=>"ut", :source=>"https://coronavirus.utah.gov/coronavirus-latest-information/", :positive=>1, :error=>[]}

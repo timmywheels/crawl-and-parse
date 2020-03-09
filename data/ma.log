@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:53:29 -0700, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :date=>"March 8, 2020", :positive=>28, :error=>[]}
 {:ts=>2020-03-08 17:04:35 -0700, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :date=>"March 8, 2020", :positive=>28, :error=>[]}
 {:ts=>2020-03-08 22:02:55 -0700, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :date=>"March 8, 2020", :positive=>28, :error=>[]}
+{:ts=>2020-03-09 08:33:31 -0700, :st=>"ma", :source=>"https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring", :error=>["missing date", "missing cases", "missing presumptive positive"], :positive=>28}

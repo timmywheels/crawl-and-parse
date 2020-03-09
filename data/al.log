@@ -8,3 +8,7 @@
 {:ts=>2020-03-08 17:03:00 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 21:48:45 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 21:59:45 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
+{:ts=>2020-03-09 08:22:06 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
+{:ts=>2020-03-09 08:22:33 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
+{:ts=>2020-03-09 08:23:11 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}
+{:ts=>2020-03-09 08:26:33 -0700, :st=>"al", :source=>"http://www.alabamapublichealth.gov/", :positive=>0, :error=>[]}

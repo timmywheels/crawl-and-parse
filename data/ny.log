@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:55:06 -0700, :st=>"ny", :source=>"https://www.health.ny.gov/diseases/communicable/coronavirus/", :date=>"11am March 8, 2020", :positive=>105, :error=>[]}
 {:ts=>2020-03-08 17:06:02 -0700, :st=>"ny", :source=>"https://www.health.ny.gov/diseases/communicable/coronavirus/", :date=>"11am March 8, 2020", :positive=>105, :error=>[]}
 {:ts=>2020-03-08 22:04:31 -0700, :st=>"ny", :source=>"https://www.health.ny.gov/diseases/communicable/coronavirus/", :date=>"11am March 8, 2020", :positive=>105, :error=>[]}
+{:ts=>2020-03-09 08:41:24 -0700, :st=>"ny", :source=>"https://www.health.ny.gov/diseases/communicable/coronavirus/", :date=>"11am March 8, 2020", :positive=>105, :error=>[]}

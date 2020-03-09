@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:57:58 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
 {:ts=>2020-03-08 17:06:23 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
 {:ts=>2020-03-08 22:04:48 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}
+{:ts=>2020-03-09 08:42:01 -0700, :st=>"ri", :source=>"https://health.ri.gov/diseases/respiratory/?parm=163", :positive=>2, :error=>[]}

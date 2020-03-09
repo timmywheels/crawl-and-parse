@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:53:28 -0700, :st=>"la", :source=>"http://ldh.la.gov/index.cfm/page/3835", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 17:04:35 -0700, :st=>"la", :source=>"http://ldh.la.gov/index.cfm/page/3835", :positive=>0, :error=>[]}
 {:ts=>2020-03-08 22:02:55 -0700, :st=>"la", :source=>"http://ldh.la.gov/index.cfm/page/3835", :positive=>0, :error=>[]}
+{:ts=>2020-03-09 08:33:31 -0700, :st=>"la", :source=>"http://ldh.la.gov/index.cfm/page/3835", :positive=>0, :error=>[]}

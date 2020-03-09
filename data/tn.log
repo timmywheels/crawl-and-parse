@@ -5,3 +5,4 @@
 {:ts=>2020-03-08 16:58:12 -0700, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :error=>[]}
 {:ts=>2020-03-08 17:06:37 -0700, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :error=>[]}
 {:ts=>2020-03-08 22:05:10 -0700, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :positive=>3, :date=>"March 8, 2020.", :error=>[]}
+{:ts=>2020-03-09 08:42:30 -0700, :st=>"tn", :source=>"https://www.tn.gov/health/cedep/ncov.html", :positive=>3, :date=>"March 8, 2020.", :error=>[]}
