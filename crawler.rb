@@ -3,7 +3,7 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = true # saves output to "debug/" dir
+DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
 DEBUG_ST = nil  # run for a single state
@@ -1071,6 +1071,29 @@ byebug # for captcha
     h
   end
 
+  def parse_sc(h)
+    # todo date on page
+    rows=@doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+    if i = rows.find_index("Negative tests")
+      h[:negative] = string_to_i(rows[i+1])
+    else
+      @errors << "missing negative"
+    end
+    if i = rows.find_index("Presumptive positives")
+      h[:positive] = string_to_i(rows[i+1])
+    else
+      @errors << "missing pres positive"
+    end
+    if i = rows.find_index("Positive tests")
+      h[:positive] += string_to_i(rows[i+1])
+    else
+      @errors << "missing positive"
+    end
+    h[:pending] = 0
+    h[:tested] = h[:positive] + h[:negative]
+    h
+  end
+
   def parse_sd(h)
     rows = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if rows[0] == "Positive*"
@@ -1121,7 +1144,7 @@ byebug # for captcha
   end # parse_tx  
 
   def parse_ut(h)
-    if @s =~ />This is currently the only case in Utah/
+    if @s =~ /there is only one confirmed case of COVID-19 in Utah/
       h[:positive] = 1
     else
       @errors << 'ut: more than 1 case'
@@ -1308,6 +1331,8 @@ byebug # for captcha
 
   def method_missing(m, h)
     puts "skipping state: #{@st}"
+    puts "Error: all states should be covered now"
+    byebug
     if USER_FLAG
       @driver.navigate.to @url
       byebug 
