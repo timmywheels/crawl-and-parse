@@ -3,7 +3,7 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = true # saves output to "debug/" dir
+DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
 DEBUG_ST = nil  # run for a single state
@@ -183,18 +183,23 @@ class Crawler
       @errors << "missing tests"
     end
 =end
-    if @s=~ />Positive: ([^<]+)</
-      h[:positive] = $1.gsub(',','').to_i
+    if @s=~ />Positive:([^<]+)</
+      h[:positive] = string_to_i($1)
     else
       @errors << "missing positive"
     end
-    if @s=~ />Negative: ([^<]+)</
-      h[:negative] = $1.gsub(',','').to_i
+    if @s=~ />Indeterminate treated as a positive:([^<]+)</
+      h[:positive] += string_to_i($1)
+    else
+      @errors << "missing positive 2"
+    end
+    if @s=~ />Negative:([^<]+)</
+      h[:negative] = string_to_i($1)
     else
       @errors << "missing negative"
     end
-    if @s=~ />Total Tests\*: ([^<]+)</
-      h[:tested] = $1.gsub(',','').to_i
+    if @s=~ />Total Tests\*:([^<]+)</
+      h[:tested] = string_to_i($1)
     else
       @errors << "missing tested"
     end
@@ -238,6 +243,7 @@ class Crawler
       h[:pending] = $4.to_i
       h[:positive] = $5.to_i
       h[:positive_other_lab] = $6.to_i
+      h[:positive] += h[:positive_other_lab]
       h[:tested] = h[:negative] + h[:pending] + h[:positive]
     else
       @errors << "parse failed"
@@ -453,16 +459,27 @@ byebug # for captcha
   end # parse_il  
 
   def parse_in(h)
-    if @s =~ /United States. On March 6, ISDH <a href\=\"https:\/\/calendar.in.gov\/site\/isdh\/event\/state-health-department-confirms-1st-case-of-covid-19--in-hoosier-with-recent-travel\/\">confirmed<\/a>\&nbsp\;the first case/
-      h[:positive] = 1
+    @driver.navigate.to @url
+    sleep(5)
+    @s = @driver.find_elements(class: 'claro')[0].text
+    rows = @s.split("\n")
+    if @s =~ /Data as of ([^\n]+)\n/
+      h[:date] = $1
     else
-      @errors << "failed to parse"
+      @errors << 'missing date'
     end
+    if @s =~ /Total Positive Cases\n([^\n]+)\nTotal Deaths\n([^\n]+)\nTotal Tested by ISDH\n([^\n]+)\n/
+      h[:positive] = string_to_i($1)
+      h[:deaths] = string_to_i($2)
+      h[:tested] = string_to_i($3)
+    else
+      @errors << 'missing tested'
+    end 
     h
   end
 
   def parse_ky(h)
-    if @doc.text =~ /Current as of ([^\.]+)\.m. Eastern timeKentucky Coronavirus MonitoringNumber Tested: ([0-9,]+)Positive: ([0-9,]+) Negative: ([0-9,]+)Note:/
+    if @doc.text =~ /Current as of ([^\.]+)\.m. Eastern timeKentucky Coronavirus MonitoringNumber Tested: ([0-9, ]+)Positive: ([0-9, ]+)Negative: ([0-9, ]+)Note:/
       h[:date] = $1.strip
       h[:tested] = $2.to_i
       h[:positive] = $3.to_i
@@ -632,6 +649,12 @@ byebug # for captcha
     else
       @errors << "missing date"
     end
+    if @s =~ /Tests performed by the MSDH Public Health Laboratory as of ([^:]+): <strong>([^<]+)</
+      h[:tested] = string_to_i($2)
+      h[:date_tested] = $1
+    else
+      @errors << 'missing tested'
+    end
     h
   end
 
@@ -766,6 +789,12 @@ byebug # for captcha
       h[:pui] = rows[i+1].to_i
     else
       @errors << "missing pui"
+    end
+    if i = rows.find_index("Positive testsfrom commerciallaboratories")
+      h[:positive] += (x=rows[i+1].to_i)
+      h[:tested] += x
+    else
+      @errors << "missing positive commercial"
     end
     h
   end
