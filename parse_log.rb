@@ -37,7 +37,7 @@ for file in `ls data/*.log`.split("\n")
     end
     if positive
       if h_latest[:positive] && h_latest[:positive].to_i > positive.to_i
-        byebug
+        #byebug
       else
         h_latest[:positive] = positive
       end
@@ -54,6 +54,11 @@ for file in `ls data/*.log`.split("\n")
       h_latest[:deaths_source] = source
     end
   end # line
+
+  if h_latest[:tested].to_i < h_latest[:positive].to_i
+    h_latest[:tested] = h_latest[:positive].to_i
+  end
+
   arr << [h[:st].upcase, h_latest[:tested], h_latest[:positive], h_latest[:deaths], h_latest[:tested_date], h_latest[:positive_date], h_latest[:deaths_date], h_latest[:tested_source], h_latest[:positive_source], h_latest[:deaths_source]].join("\t")
 end
 puts ['state', 'tested', 'positive', 'deaths', 'tested crawl date', 'positive crawl date', 'deaths crawl date', 'tested source', 'positive source', 'deaths source'].join("\t")
