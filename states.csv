@@ -1,5 +1,5 @@
 AK	http://dhss.alaska.gov/dph/Epi/id/Pages/COVID-19/monitoring.aspx
-AL	http://www.alabamapublichealth.gov/
+AL	https://www.alabamapublichealth.gov/infectiousdiseases/2019-coronavirus.html
 AR	https://www.healthy.arkansas.gov/programs-services/topics/novel-coronavirus
 AZ	https://tableau.azdhs.gov/views/COVID-19Table/COVID-19table?:isGuestRedirectFromVizportal=y&:embed=y
 CA	https://www.cdph.ca.gov/Programs/CID/DCDC/Pages/Immunization/nCOV2019.aspx
@@ -19,7 +19,7 @@ KY	https://chfs.ky.gov/agencies/dph/Pages/covid19.aspx
 LA	http://ldh.la.gov/index.cfm/page/3835
 MA	https://www.mass.gov/info-details/covid-19-quarantine-and-monitoring
 MD	https://phpa.health.maryland.gov/Pages/Novel-coronavirus.aspx
-ME	https://www.maine.gov/dhhs/mecdc/health-advisory.shtml?id=2182936
+ME	https://www.maine.gov/dhhs/mecdc/infectious-disease/epi/airborne/coronavirus.shtml
 MI	https://www.michigan.gov/coronavirus
 MN	https://www.health.state.mn.us/diseases/coronavirus/situation.html
 MO	https://health.mo.gov/living/healthcondiseases/communicable/novel-coronavirus/
@@ -38,12 +38,12 @@ OK	https://www.ok.gov/health/Prevention_and_Preparedness/Acute_Disease_Service/D
 OR	https://www.oregon.gov/oha/PH/DISEASESCONDITIONS/DISEASESAZ/Pages/emerging-respiratory-infections.aspx
 PA	https://www.health.pa.gov/topics/disease/Pages/Coronavirus.aspx
 RI	https://health.ri.gov/data/covid-19/
-SC	https://scdhec.gov/health/infectious-diseases/viruses/coronavirus-disease-2019-covid-19
+SC	https://scdhec.gov/health/infectious-diseases/viruses/coronavirus-disease-2019-covid-19/monitoring-testing-covid-19
 SD	https://doh.sd.gov/news/Coronavirus.aspx
 TN	https://www.tn.gov/health/cedep/ncov.html
 TX	https://www.dshs.state.tx.us/coronavirus/#casecounts
-UT	https://coronavirus.utah.gov/coronavirus-latest-information/
-VA	https://vdhdata.vdh.virginia.gov/views/COVID-19inVirginia/External
+UT	https://coronavirus.utah.gov/latest/
+VA	http://www.vdh.virginia.gov/surveillance-and-investigation/novel-coronavirus/
 VT	https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus
 WA	https://www.doh.wa.gov/emergencies/coronavirus
 WI	https://www.dhs.wisconsin.gov/outbreaks/index.htm
