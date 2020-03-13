@@ -13,7 +13,6 @@ for file in `ls data/*.log`.split("\n")
     if line =~ /:ts=>([^,}]+)/
       date = $1
     else
-      raise
       byebug
       puts
     end
@@ -32,14 +31,18 @@ for file in `ls data/*.log`.split("\n")
     if negative >= h_latest[:negative]
       h_latest[:negative] = negative 
     elsif negative > 0
-puts "neg smaller!"
+      puts "neg smaller!"
       byebug
       h_latest[:negative] = negative
     end
 
     if tested
       if h_latest[:tested] && h_latest[:tested].to_i > tested.to_i
+        puts line
+        puts h_latest
+        puts tested
         byebug
+        puts 
       else
         h_latest[:tested] = tested
       end
@@ -58,6 +61,7 @@ puts "neg smaller!"
     if deaths 
       if h_latest[:deaths] && h_latest[:deaths].to_i > deaths.to_i
         byebug
+        puts
       else
         h_latest[:deaths] = deaths
       end
@@ -74,7 +78,10 @@ puts "neg smaller!"
   # pending only uses last one
   new_tested = h_latest[:positive].to_i + h_latest[:negative].to_i + h[:pending].to_i
   if new_tested > h_latest[:tested].to_i
-    byebug
+    puts line
+    puts new_tested
+    puts h_latest
+    #byebug
     h_latest[:tested] = new_tested
   end
 
