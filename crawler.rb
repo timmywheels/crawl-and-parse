@@ -10,6 +10,10 @@ DEBUG_ST = nil  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
+# ri crashed
+# la missing tested
+# dc missing tested
+
 class Crawler
 
   def parse_ak(h)
@@ -34,13 +38,18 @@ class Crawler
   def parse_al(h)
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
     byebug unless (cols.size - 1) % 3 == 0
-    byebug unless cols[1..3] == ["County", "Cases", "Deaths"]
+    byebug unless cols[1..3] == ["County of Residence", "Cases", "Deaths"]
     rows = (cols.size - 1)/3 - 1
     h[:positive] = 0
     h[:deaths] = 0
     rows.times do |r|
-      h[:positive] += string_to_i(cols[(r+1)*3+r+2])
-      h[:deaths] += string_to_i(cols[(r+2)*3+r])
+      h[:positive] += string_to_i(cols[(r+1)*3+2])
+      h[:deaths] += string_to_i(cols[(r+2)*3])
+    end
+    if @s.gsub(',','') =~ /Total unique patients tested: ([0-9]+)[^0-9]/
+      h[:tested] = string_to_i($1)
+    else
+      @errors << 'missing tested'
     end
     h
   end
@@ -151,26 +160,14 @@ class Crawler
   end # parse_az
 
   def parse_ca(h)
-=begin
-    if @s =~ /As of(.+), there are a total of(.+)positivecases and(.+)death in California:(.+)cases are from repatriation flights. The other(.+)confirmed cases include(.+)that are travel related,(.+)due to person-to-person,(.+)community acquired and(.+)from unknown sources/
-      h[:date] = $1.strip
-      h[:positive] = string_to_i($2)
-      h[:deaths] = string_to_i($3)
-      h[:case_repatriation] = string_to_i($4)
-      h[:case_other] = string_to_i($5)
-      h[:case_other_travel] = string_to_i($6)
-      h[:case_other_p2p] = string_to_i($7)
-      h[:case_other_community] = string_to_i($8)
-      h[:case_unknown] = string_to_i($9)
-=end
     @driver.navigate.to @url
     sleep(3)
-    if @driver.find_elements(class: 'NewsItemContent').map {|i| i.text}.select {|i| i=~/there are a total of 247 positive cases and five deaths in California/}.last =~ /there are a total of (.*) positive cases and (.*) deaths in California/
+    @s = @driver.find_elements(id: 's4-workspace').first.text.gsub(/\s+/,' ')
+    if @s =~ /there are a total of (.*) positive cases and (.*) deaths in California/
       h[:positive] = string_to_i($1)
       h[:deaths] = string_to_i($2)
-    else # regex doesn't match
-      @errors << "CA not parsed"
-      h[:s] = @s
+    else
+      @errors << 'CA parse failed'
     end
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
     h[:negative] = 690 # TODO hard coded
@@ -300,6 +297,8 @@ rescue => e
   byebug
   puts
 end
+byebug
+    h[:tested] = 69
     if (x = @s.scan(/Number of positive results:([^\n]+)/)).size > 0
       h[:positive] = x.map {|i| string_to_i(i.first)}.max
     else
@@ -367,6 +366,9 @@ end
         if @s =~ /\n([^\s]+) – Florida Resident Presumptive Positive/
           h[:positive] += $1.to_i
         end
+        #if @s =~ /\n([^\s]+) – Florida Residents Diagnosed and Isolated/
+        #  h[:positive] += $1.to_i
+        #end
         if @s =~ /\n([^\s]+) – Florida Cases Repatriated/
           h[:positive] += $1.to_i
         end
@@ -466,8 +468,14 @@ rescue => e
   byebug
   puts "fix browser"
 end
-    puts "captcha"
-    byebug # for captcha
+    sleep(2)
+    @s = @driver.find_elements(class: 'table').map {|i| i.text}.select {|i| i=~/Reported Cases in Iowa by County/}[0]
+    if @s.gsub(',','') =~ /\nTotal ([0-9]+)/
+      h[:positive] = string_to_i($1)
+    else
+      @errors << 'missing positive'
+    end
+=begin
     @s = @driver.find_elements(class: 'table').map {|i| i.text}.select {|i| i=~/COVID-19 Testing in Iowa/}[0]
     if @s =~ /Positive ([^\n]+)\nNegative ([^\n]+)\nPending ([^\n]+)\nTotal ([^\n]+)/
       h[:positive] = string_to_i($1)
@@ -477,6 +485,7 @@ end
     else
       @errors << 'parse failed'
     end
+=end
     # TODO parse other table
     h
   end
@@ -1528,11 +1537,12 @@ end
     @driver.navigate.to @url
     sleep(3)
 begin
-    cols = @driver.find_elements(class: 'pane_layout').map {|i| i.text}.select {|i| i=~ /Total Tests/}[0].split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+  cols = @driver.find_elements(class: 'contentmain')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
 rescue => e
   byebug
   puts
 end
+
     x = cols.select {|i| i=~/^Positive\s+([^\s+]+)/}
     if x.size == 1 && x[0] =~ /^Positive\s+([^\s+]+)/
       h[:positive] = string_to_i($1)
@@ -1646,8 +1656,8 @@ end
   end
 
   def parse_wy(h)
-    if @s =~ /At this time there is one reported case/
-      h[:positive] = 1
+    if @s =~ /At this time there are (.*) reported case/
+      h[:positive] = string_to_i($1)
     else
       @errors << "cases found"
     end
@@ -1655,6 +1665,21 @@ end
   end
 
   ######################################
+
+  def search_term(word='death')
+      if i = (@doc.text =~ /#{word}/i)
+        puts "found #{word} in #{@st}"
+        puts @doc.text[(i-30)..(i+30)]
+        return true
+      end
+      @driver.navigate.to @url
+      if i = (@driver.page_source =~ /#{word}/i)
+        puts "found #{word} in #{@st}"
+        puts @driver.page_source[(i-30)..(i+30)]
+        return true
+      end
+      false
+  end
 
   def string_to_i(s)
     return s if s.class == Integer
@@ -1865,6 +1890,15 @@ end
         byebug
         puts
       end
+
+      unless h[:deaths]
+        if search_term('death')
+          puts h.inspect
+          byebug
+          puts
+        end
+      end
+
       h_all << h  
       # save parsed h
       open("#{@path}#{@st}.log",'a') {|f| f.puts h.inspect} if h && h.size > 0 && !(h[:skip])
