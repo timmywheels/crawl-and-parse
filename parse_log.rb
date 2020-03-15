@@ -32,7 +32,7 @@ for file in `ls data/*.log`.split("\n")
       h_latest[:negative] = negative 
     elsif negative > 0
       puts "neg smaller!"
-      byebug
+      #byebug
       h_latest[:negative] = negative
     end
 
@@ -41,7 +41,7 @@ for file in `ls data/*.log`.split("\n")
         puts line
         puts h_latest
         puts tested
-        byebug
+        #byebug
         puts 
       else
         h_latest[:tested] = tested
@@ -86,6 +86,19 @@ for file in `ls data/*.log`.split("\n")
   end
 
   arr << [h[:st].upcase, h_latest[:tested], h_latest[:positive], h_latest[:deaths], h_latest[:tested_date], h_latest[:positive_date], h_latest[:deaths_date], h_latest[:tested_source], h_latest[:positive_source], h_latest[:deaths_source]].join("\t")
+end
+
+j = 0
+# open prev all.csv and compare
+lines = open('all.csv').readlines
+lines.shift
+lines.map {|i| i.split("\t")}.each do |st, tested, positive, deaths, junk| 
+  st2, tested2, positive2, deaths2, junk = arr[j].split("\t")
+  byebug unless st2.downcase == st.downcase
+  byebug if tested.to_i > tested2.to_i
+  byebug if positive.to_i > positive2.to_i
+  byebug if deaths.to_i > deaths2.to_i
+  j += 1
 end
 
 open('all.csv','w') do |fout|
