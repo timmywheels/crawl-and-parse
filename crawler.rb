@@ -10,10 +10,7 @@ DEBUG_ST = nil  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
-# TODO
-# la
-# ri
-# sc
+# la todo
 
 
 class Crawler
