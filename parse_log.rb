@@ -88,6 +88,7 @@ for file in `ls data/*.log`.split("\n")
   arr << [h[:st].upcase, h_latest[:tested], h_latest[:positive], h_latest[:deaths], h_latest[:tested_date], h_latest[:positive_date], h_latest[:deaths_date], h_latest[:tested_source], h_latest[:positive_source], h_latest[:deaths_source]].join("\t")
 end
 
+diff_count = 0
 j = 0
 # open prev all.csv and compare
 lines = open('all.csv').readlines
@@ -98,8 +99,13 @@ lines.map {|i| i.split("\t")}.each do |st, tested, positive, deaths, junk|
   byebug if tested.to_i > tested2.to_i
   byebug if positive.to_i > positive2.to_i
   byebug if deaths.to_i > deaths2.to_i
+  if tested.to_i != tested2.to_i || positive.to_i != positive2.to_i || deaths.to_i != deaths2.to_i
+    diff_count += 1
+    puts "#{diff_count}\t#{st2} changed from: [#{[tested, positive, deaths].join(" , ")}] to [#{[tested2, positive2, deaths2].join(" , ")}]"
+  end
   j += 1
 end
+puts "#{diff_count} states updated."
 
 open('all.csv','w') do |fout|
   fout.puts ['state', 'tested', 'positive', 'deaths', 'tested crawl date', 'positive crawl date', 'deaths crawl date', 'tested source', 'positive source', 'deaths source'].join("\t")

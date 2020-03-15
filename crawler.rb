@@ -6,12 +6,13 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'md'  # run for a single state
+DEBUG_ST = nil  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
-# la todo
-
+# ok broken
+# ri broken
+# tx
 
 class Crawler
 
@@ -586,21 +587,19 @@ end
 
   def parse_la(h)
     @driver.navigate.to @url
-
-h[:tested] = 247
-h[:positive] = 91
-h[:negative]
-h[:pending]
-h[:deaths] = 2
-byebug
-begin
-    nil
-    #@s = @driver.find_elements(class: "ma__rich-text ").map {|i| i.text}.select {|i| i=~/onfirmed cases/}[-1]
-rescue => e
-  byebug
-  puts
-end
-    # https://www.arcgis.com/apps/opsdashboard/index.html#/c091b679e7f64fa78628de361f64eb92
+    @s = @driver.find_elements(class: 'dashboard-page')[0].text 
+    if @s =~ /\nData updated:([^\n]+)\n/
+      h[:date] = $1.strip
+    else
+      @errors << 'missing date'
+    end
+    if @s =~ /Information\n([^\n]+)\nCases Reported\n([^\n]+)\nTests Completed\n([^\n]+)\nDeaths Reported/
+      h[:tested] = string_to_i($2)
+      h[:positive] = string_to_i($1)
+      h[:deaths] = string_to_i($3)
+    else
+      @errors << 'parse failed'
+    end
     h
   end
 
@@ -819,10 +818,10 @@ end
 
   def parse_ms(h)
     s = @doc.css('body').text.gsub(',','')
-    if s =~ /Mississippi presumptive positive cases: ([0-9]+)[^0-9]/i
+    if s =~ /Mississippi positive cases: ([0-9]+)[^0-9]/i
       h[:positive] = $1.to_i
     else
-      @errors << "missing cases"
+      @errors << "missing positive"
     end
     if s =~ /Individuals tested by the MSDH Public Health Laboratory: ([0-9]+)[^0-9]/i
       h[:tested] = string_to_i($1)
@@ -1262,7 +1261,7 @@ end
     @driver.navigate.to @url
     sleep(3)
 begin
-    cols = @driver.find_elements(class: "ms-rteTable-default").map {|i| i.text}.select {|i| i=~/Presumptive/}.first.split("\n")
+    cols = @driver.find_elements(class: "ms-rteTable-default").map {|i| i.text}.select {|i| i=~/Persons Under/}.first.split("\n")
 rescue => e
   byebug
   puts
@@ -1272,13 +1271,13 @@ end
     else
       @errors << "missing date"
     end
-    if cols[0..2] == ["Persons Under Investigation (PUIs)", "Negative Pending Presumptive Positive", "Confirmed Positive"] 
-      x = cols[3..-1].map {|i| i.split}.flatten.map {|i| i.strip}.select {|i| i.size>0}.map {|i| string_to_i(i)}
+    if cols[1] == "Negative Pending Positive"
+      x = cols[2..-1].map {|i| i.split}.flatten.map {|i| i.strip}.select {|i| i.size>0}.map {|i| string_to_i(i)}
       h[:pui] = x[0]
       h[:negative] = x[1]
       h[:pending] = x[2]
       h[:positive] = x[3]
-      h[:positive] += x[4]
+      #h[:positive] += x[4].to_i
       h[:tested] = h[:positive] + h[:negative] + h[:pending]
     else
       @errors << "parse error"
@@ -1455,24 +1454,10 @@ end
   end # parse_ut
 
   def parse_va(h)
-=begin
-    if @s =~ /Number of Presumptive Positive or Confirmed Cases:([^<]+)</
-      h[:positive] = string_to_i($1)
-    else
-      @errors << 'missing positive'
-    end
-    if @s =~ /Number of Negative COVID-19 Tests:([^<]+)</
-      h[:negative] = string_to_i($1)
-      h[:tested] = h[:positive] + h[:negative]
-      h[:pending] = 0
-    else
-      @errors << 'missing negative'
-    end
-=end
     puts "tableu for va"
     @driver.navigate.to @url
-h[:tested] = 395
-h[:positive] = 41
+h[:tested] = 408
+h[:positive] = 45
 h[:negative]
 h[:pending]
 h[:deaths]
