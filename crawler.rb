@@ -6,7 +6,7 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = nil  # run for a single state
+DEBUG_ST = 'md'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
@@ -36,6 +36,23 @@ class Crawler
 
   def parse_al(h)
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
+if cols[3] != 'Deaths'
+    byebug unless (cols.size - 1) % 2 == 0
+    byebug unless cols[1..2] == ["County of Residence", "Cases"]
+    rows = (cols.size - 1)/2 - 2 # last should be Total
+    h[:positive] = 0
+    rows.times do |r|
+      h[:positive] += string_to_i(cols[(r+1)*2+2])
+    end
+    byebug unless cols[(rows+1)*2+1] == 'Total'
+    byebug unless h[:positive] == string_to_i(cols[(rows+1)*2+2])
+    if @s.gsub(',','') =~ />Deaths:([^<]+)</
+      h[:deaths] = string_to_i($1)
+    else
+      @errors << 'missing deaths'
+    end
+#begin changed 3/15/2020
+else
     byebug unless (cols.size - 1) % 3 == 0
     byebug unless cols[1..3] == ["County of Residence", "Cases", "Deaths"]
     rows = (cols.size - 1)/3 - 1
@@ -45,6 +62,7 @@ class Crawler
       h[:positive] += string_to_i(cols[(r+1)*3+2])
       h[:deaths] += string_to_i(cols[(r+2)*3])
     end
+end
     if @s.gsub(',','') =~ /Total unique patients tested: ([0-9]+)[^0-9]/
       h[:tested] = string_to_i($1)
     else
@@ -61,13 +79,13 @@ class Crawler
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumed Positive Cases of COVID-19/i}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing positive'
+      @errors << 'missing positive 2'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases of COVID-19 in Arkansas/i}.first
       h[:positive] = 0 unless h[:positive]
       h[:positive] += string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing negative'
+      @errors << 'missing positive'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Persons Under Investigation/i}.first
       h[:pending] = string_to_i(cols[x[1]+1])
@@ -569,11 +587,11 @@ end
   def parse_la(h)
     @driver.navigate.to @url
 
-h[:tested] = 210
-h[:positive] = 77
+h[:tested] = 247
+h[:positive] = 91
 h[:negative]
 h[:pending]
-h[:deaths] = 1
+h[:deaths] = 2
 byebug
 begin
     nil
@@ -621,25 +639,9 @@ end
   end # parse_ma
 
   def parse_md(h)
-=begin
-    if @s =~ />Number of patients tested for COVID-19: ([^<]+)</
-      h[:tested] = $1.to_i
-    else
-      @errors << "missing tested"
-    end
-    if @s =~ />Number of COVID-19 tests pending: ([^<]+)</
-      h[:pending] = $1.to_i
-    else
-      @errors << "missing pending"
-      h[:pending] = 0
-    end
-    if @s =~ /Number of negative COVID-19 tests: ([^<]+)</
-      h[:negative] = $1.to_i
-    else
-      @errors << "missing negative"
-    end
-=end
-    if @s =~ /Number of positive COVID-19 tests: ([^<]+)</
+    @driver.navigate.to @url
+    sleep(3)
+    if @driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}[0] =~ /COVID-19 Statistics in Maryland\nNumber of Confirmed Cases: ([^\n]+)\n/
       h[:positive] = $1.to_i
     else
       @errors << "missing cases"
@@ -781,7 +783,7 @@ end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumptive Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing positive'
+      @errors << 'missing positive 3'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^CDC Confirmed Positive/}.first
       h[:positive] = 0 unless h[:positive]
@@ -793,7 +795,7 @@ end
       h[:positive] = 0 unless h[:positive]
       h[:positive] += string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing positive 3'
+      @errors << 'missing positive'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Deaths/}.first
       h[:deaths] = string_to_i(cols[x[1]+1])
@@ -891,10 +893,10 @@ end
     # TODO weird js
     puts "challenging js for nd"
 
-h[:tested] = 93
+h[:tested] = 100
 h[:positive] = 1
-h[:negative] = 86
-h[:pending] = 6
+h[:negative] = 95
+h[:pending] = 4
 h[:deaths] = 0
 
     if USER_FLAG
@@ -1177,16 +1179,25 @@ end
   end
 
   def parse_ok(h)
-    cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Oklahoma Test Results/}.last.split("\r").select {|i| i.strip.size > 0}
+#@driver.navigate.to(@url) rescue nil
+#byebug
+    cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Oklahoma Test Results/}.last.split("\n").select {|i| i.strip.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(Confirmed\)/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(Presumptive/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(Presumptive\*\)/}.first
       h[:positive] += string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive 2'
+    end
+    if @s =~ />\^ Out of state residents\.</
+
+    else
+      # table changed, might need to include another row
+      byebug
+      puts
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative/}.first
       h[:negative] = string_to_i(cols[x[1]+1])
@@ -1198,6 +1209,7 @@ end
     else
       @errors << 'missing pending'
     end
+    h[:tested] = h[:positive].to_i + h[:negative].to_i + h[:pending].to_i
 =begin removed 3/12/2020
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Tested/}.first
       h[:tested] = string_to_i(cols[x[1]+1])
