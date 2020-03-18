@@ -31,8 +31,7 @@ for file in `ls data/*.log`.split("\n")
     if negative >= h_latest[:negative]
       h_latest[:negative] = negative 
     elsif negative > 0
-      puts "neg smaller!"
-      #byebug
+      puts "neg smaller! #{h[:st]} #{negative} #{h_latest[:negative]}"
       h_latest[:negative] = negative
     end
 
@@ -58,6 +57,13 @@ for file in `ls data/*.log`.split("\n")
       h_latest[:positive_date] = date || ts
       h_latest[:positive_source] = source
     end
+
+    _tested = h_latest[:positive].to_i + h_latest[:negative].to_i + h_latest[:pending].to_i
+    if _tested > h_latest[:tested].to_i
+      puts "update tested #{h[:st]} #{_tested} #{h_latest[:tested]}"
+      h_latest[:tested] = _tested
+    end
+
     if deaths 
       if h_latest[:deaths] && h_latest[:deaths].to_i > deaths.to_i
         byebug
