@@ -1,7 +1,0 @@
-{:ts=>2020-03-06 22:36:48 -0800, :st=>"wi", :cases=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-07 14:36:49 -0800, :st=>"wi", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-07 22:57:17 -0800, :st=>"wi", :source=>"https://www.dhs.wisconsin.gov/outbreaks/index.htm", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-08 13:34:01 -0700, :st=>"wi", :source=>"https://www.dhs.wisconsin.gov/outbreaks/index.htm", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-08 17:07:30 -0700, :st=>"wi", :source=>"https://www.dhs.wisconsin.gov/outbreaks/index.htm", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-08 22:06:00 -0700, :st=>"wi", :source=>"https://www.dhs.wisconsin.gov/outbreaks/index.htm", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}
-{:ts=>2020-03-09 08:43:23 -0700, :st=>"wi", :source=>"https://www.dhs.wisconsin.gov/outbreaks/index.htm", :date=>"March 6, 2020", :positive=>1, :negative=>31, :pending=>12, :tested=>44, :error=>[]}

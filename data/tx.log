@@ -1,8 +1,0 @@
-{:ts=>2020-03-06 22:36:18 -0800, :st=>"tx", :cases=>5, :error=>[]}
-{:ts=>2020-03-07 14:35:09 -0800, :st=>"tx", :positive=>8, :error=>[]}
-{:ts=>2020-03-07 22:55:57 -0800, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
-{:ts=>2020-03-08 13:32:37 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
-{:ts=>2020-03-08 16:58:18 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
-{:ts=>2020-03-08 17:06:44 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
-{:ts=>2020-03-08 22:05:11 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>8, :error=>[]}
-{:ts=>2020-03-09 08:42:32 -0700, :st=>"tx", :source=>"https://www.dshs.state.tx.us/coronavirus/#casecounts", :positive=>12, :error=>[]}

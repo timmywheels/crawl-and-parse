@@ -1,8 +1,0 @@
-{:ts=>2020-03-06 22:35:25 -0800, :st=>"nm", :error=>[]}
-{:ts=>2020-03-07 14:34:32 -0800, :st=>"nm", :date=>"March 6, 2020", :positive=>0, :negative=>32, :tested=>32, :error=>[]}
-{:ts=>2020-03-07 22:55:00 -0800, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 7, 2020", :positive=>0, :negative=>46, :tested=>46, :error=>[]}
-{:ts=>2020-03-08 13:31:46 -0700, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 7, 2020", :positive=>0, :negative=>46, :tested=>46, :error=>[]}
-{:ts=>2020-03-08 16:54:56 -0700, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 7, 2020", :positive=>0, :negative=>46, :tested=>46, :pending=>0, :error=>[]}
-{:ts=>2020-03-08 17:05:52 -0700, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 7, 2020", :positive=>0, :negative=>46, :tested=>46, :pending=>0, :error=>[]}
-{:ts=>2020-03-08 22:04:17 -0700, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 8, 2020", :positive=>0, :negative=>57, :tested=>57, :pending=>0, :error=>[]}
-{:ts=>2020-03-09 08:41:05 -0700, :st=>"nm", :source=>"https://nmhealth.org/about/erd/ideb/ncov/", :date=>"March 8, 2020", :positive=>0, :negative=>57, :tested=>57, :pending=>0, :error=>[]}

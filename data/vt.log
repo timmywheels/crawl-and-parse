@@ -1,8 +1,0 @@
-{:ts=>2020-03-06 22:36:21 -0800, :st=>"vt", :error=>[]}
-{:ts=>2020-03-07 14:36:03 -0800, :st=>"vt", :date=>"March 7, 2020", :pui=>213, :pui_cumulative=>236, :negative=>16, :positive=>0, :tested=>16, :error=>[]}
-{:ts=>2020-03-07 22:56:48 -0800, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 7, 2020 10:15 p.m.", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :tested=>29, :error=>[]}
-{:ts=>2020-03-08 13:33:40 -0700, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 8, 2020", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :tested=>29, :error=>[]}
-{:ts=>2020-03-08 16:59:16 -0700, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 8, 2020", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :pending=>0, :tested=>29, :error=>[]}
-{:ts=>2020-03-08 17:07:28 -0700, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 8, 2020", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :pending=>0, :tested=>29, :error=>[]}
-{:ts=>2020-03-08 22:05:58 -0700, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 8, 2020", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :pending=>0, :tested=>29, :error=>[]}
-{:ts=>2020-03-09 08:43:22 -0700, :st=>"vt", :source=>"https://www.healthvermont.gov/response/infectious-disease/2019-novel-coronavirus", :date=>"March 8, 2020", :pui=>224, :pui_cumulative=>247, :negative=>28, :positive=>1, :pending=>0, :tested=>29, :error=>[]}

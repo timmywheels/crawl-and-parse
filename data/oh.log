@@ -1,8 +1,0 @@
-{:ts=>2020-03-06 22:36:05 -0800, :st=>"oh", :cases=>0, :pui=>2, :negative=>8, :date=>"03/06/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-07 14:34:55 -0800, :st=>"oh", :positive=>0, :pui=>5, :negative=>9, :tested=>14, :date=>"03/07/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-07 22:55:17 -0800, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>5, :negative=>9, :tested=>14, :date=>"03/07/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-08 13:31:56 -0700, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>4, :negative=>10, :tested=>14, :date=>"03/08/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-08 16:55:06 -0700, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>4, :pending=>4, :negative=>10, :tested=>14, :date=>"03/08/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-08 17:06:03 -0700, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>4, :pending=>4, :negative=>10, :tested=>14, :date=>"03/08/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-08 22:04:32 -0700, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>4, :pending=>4, :negative=>10, :tested=>14, :date=>"03/08/20", :monitored=>255, :error=>[]}
-{:ts=>2020-03-09 08:41:25 -0700, :st=>"oh", :source=>"https://odh.ohio.gov/wps/portal/gov/odh/know-our-programs/Novel-Coronavirus/2019-nCoV", :positive=>0, :pui=>4, :pending=>4, :negative=>10, :tested=>14, :date=>"03/08/20", :monitored=>255, :error=>[]}

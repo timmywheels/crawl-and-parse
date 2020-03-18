@@ -1,8 +1,0 @@
-{:ts=>2020-03-06 22:35:19 -0800, :st=>"nv", :date=>"3/3/2020, 5:40 PM", :cases=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :error=>[]}
-{:ts=>2020-03-07 14:34:43 -0800, :st=>"nv", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :error=>[]}
-{:ts=>2020-03-07 22:55:09 -0800, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :error=>[]}
-{:ts=>2020-03-08 13:31:55 -0700, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :error=>[]}
-{:ts=>2020-03-08 16:55:05 -0700, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :pending=>0, :error=>[]}
-{:ts=>2020-03-08 17:06:02 -0700, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :pending=>0, :error=>[]}
-{:ts=>2020-03-08 22:04:30 -0700, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :pending=>0, :error=>[]}
-{:ts=>2020-03-09 08:41:23 -0700, :st=>"nv", :source=>"http://dpbh.nv.gov/coronavirus/", :date=>"3/3/2020, 5:40 PM", :positive=>0, :negative=>14, :tested=>14, :pui=>208, :pui_neg=>216, :pui_cumulative=>424, :pending=>0, :error=>[]}
