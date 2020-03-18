@@ -6,11 +6,14 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'or'  # run for a single state
+DEBUG_ST = 'ga'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # TODO fix
+
+# il and ga were manually updated on server
+
 # ga
 # la
 # me
@@ -21,6 +24,9 @@ SKIP_LIST = []
 # pa broken
 # sc broken
 # wi
+# il
+# ma
+# nv
 
 class Crawler
 
