@@ -3,17 +3,14 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = false # saves output to "debug/" dir
+DEBUG_FLAG = true # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'mi'  # run for a single state
+DEBUG_ST = 'vt'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # TODO fix
-# mi is not 12
-# md
-# vt 10
 # la
 # wy - tested missed
 
@@ -664,14 +661,19 @@ end
   end # parse_ma
 
   def parse_md(h)
+    # TODO county, age
     @driver.navigate.to @url
-    sleep(3)
-    if @driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}[0] =~ /COVID-19 Statistics in Maryland\nNumber of Confirmed Cases: ([^\n]+)\n/
+    sec = 10
+    while sec > 0 && !(@driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}[0] =~ /COVID-19 Statistics in Maryland\nNumber of Confirmed Cases: ([^\n]+)\n/)
+      puts 'sleeping...'
+      sleep(1)
+      sec -= 1
+    end
+    if sec > 0
       h[:positive] = $1.to_i
     else
       @errors << "missing cases"
     end
-    #h[:tested] = h[:positive] + h[:negative] + h[:pending].to_i unless h[:tested]
     h
   end
 
@@ -704,11 +706,12 @@ end
   end
 
   def parse_mi(h)
-#@driver.navigate.to @url
-#byebug
-    rows = @doc.css('table')[0].text.gsub(" "," ").split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if rows[-2] == 'Total'
-      h[:positive] = string_to_i(rows[-1])
+    # TODO county, sex, age, hospitalization
+    @driver.navigate.to @url
+    @driver.find_elements(class: 'readLink').select {|i| i.text =~ /GO TO CUMULATIVE DATA/i}[0].click
+    cols = @driver.find_elements(class: 'fullContent')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total$/}.first
+      h[:positive] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
@@ -1450,6 +1453,11 @@ h[:deaths]
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Vermont residents tested positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing positive'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Non-resident cases testing positive in Vermont/}.first
+      h[:positive] += string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
