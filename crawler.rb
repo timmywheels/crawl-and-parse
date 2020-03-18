@@ -3,16 +3,24 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 USER_FLAG = true # user enters missing data (in images, js, etc)
-DEBUG_FLAG = true # saves output to "debug/" dir
+DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'vt'  # run for a single state
+DEBUG_ST = 'or'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # TODO fix
+# ga
 # la
-# wy - tested missed
+# me
+# mn missing tested
+# nc table broken
+# ny
+# or site down
+# pa broken
+# sc broken
+# wi
 
 class Crawler
 
@@ -303,7 +311,7 @@ end
 
   def parse_de(h)
 h[:tested]
-h[:positive] = 8
+h[:positive] = 25
 h[:negative]
 h[:pending]
 h[:deaths] = 0
@@ -600,8 +608,10 @@ h[:negative]
 h[:pending]
 h[:deaths] = 4
 =end
-byebug
     @driver.navigate.to @url
+# TODO
+byebug
+return h
     @s = @driver.find_elements(class: 'dashboard-page')[0].text 
     if @s =~ /\nData updated:([^\n]+)\n/
       h[:date] = $1.strip
@@ -678,6 +688,15 @@ end
   end
 
   def parse_me(h)
+
+h[:tested] = 30+12+1670
+h[:positive] = 42
+h[:negative] = 1670
+h[:pending]
+h[:deaths]
+
+return h
+
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Total Confirmed Cases/}.first.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     byebug unless cols.size == 8
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Confirmed Cases/}.first
@@ -863,9 +882,9 @@ end
     # TODO weird js
     puts "challenging js for nd"
 
-h[:tested] = 253
-h[:positive] = 5
-h[:negative] = 248
+h[:tested] = 274
+h[:positive] = 6
+h[:negative] = 268
 h[:pending] = 0
 h[:deaths] = 0
 
@@ -1224,8 +1243,17 @@ return h
   end  
 
   def parse_pa(h)
+
+h[:tested]
+h[:positive]= 133
+h[:negative] = 1187
+h[:pending]
+h[:deaths]
+
     @driver.navigate.to @url
     sleep(3)
+byebug
+return h
 begin
     cols = @driver.find_elements(class: "ms-rteTable-default").map {|i| i.text}.select {|i| i=~/^Negative/}.first.split("\n")
 rescue => e
@@ -1248,8 +1276,15 @@ end
   end
 
   def parse_ri(h)
+h[:tested]  
+h[:positive] = 33
+h[:negative] = 540
+h[:pending] = 334
+h[:deaths]
     @driver.navigate.to @url
     sleep(6)
+byebug
+return h
 begin
     @s = @driver.find_elements(class: 'panel')[0].text
     rows = @driver.find_elements(class: 'google-visualization-table-table').map {|i| i.text}.select {|i| i=~/Number of Rhode Island COVID/i}[0].gsub(',','').split("\n").map{|i| i.strip}.select{|i| i.size>0}
@@ -1597,10 +1632,33 @@ end
   end
 
   def parse_wy(h)
+#@driver.navigate.to @url
+#byebug
     if @s =~ /At this time there are ([^\s]+) reported Wyoming cases\./
       h[:positive] = string_to_i($1)
     else
       @errors << "cases found"
+    end
+    h[:tested] = 0
+    if @s =~ /Tests completed at Wyoming Public Health Laboratory: ([^<]+)</
+      h[:tested] += string_to_i($1)
+    else
+      @errors << "missing tested"
+    end
+    if @s =~ /Tests completed at CDC lab: ([^<]+)</
+      h[:tested] += string_to_i($1)
+    else
+      @errors << "missing tested 2"
+    end
+    if @s =~ /Test results reported by commercial labs: ([^<]+)</
+      h[:tested] += string_to_i($1)
+    else
+      @errors << "missing tested 3"
+    end
+    if @s =~ /Confirmed cases: ([^<]+)</
+      byebug unless h[:positive] == string_to_i($1)
+    else
+      @errors << "missing confirmed 2"
     end
     h
   end

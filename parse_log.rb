@@ -91,7 +91,7 @@ for file in `ls data/*.log`.split("\n")
     h_latest[:tested] = new_tested
   end
 
-  arr << [h[:st].upcase, h_latest[:tested], h_latest[:positive], h_latest[:deaths], h_latest[:tested_date], h_latest[:positive_date], h_latest[:deaths_date], h_latest[:tested_source], h_latest[:positive_source], h_latest[:deaths_source]].join("\t")
+  arr << [h[:st].upcase, h_latest[:tested], h_latest[:positive], h_latest[:deaths], h_latest[:tested_date].to_s[0..63], h_latest[:positive_date].to_s[0..63], h_latest[:deaths_date].to_s[0..63], h_latest[:tested_source], h_latest[:positive_source], h_latest[:deaths_source]].map{|i| i.to_s.gsub("\n",'|')}.join("\t")
 end
 
 diff_count = 0
