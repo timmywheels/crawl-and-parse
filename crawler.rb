@@ -1451,30 +1451,25 @@ h[:deaths]
       @errors << "missing date"
     end
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Vermont residents tested positive/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive test results/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Non-resident cases testing positive in Vermont/}.first
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Vermonters tested negative/}.first
-      h[:negative] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing negative'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Vermonters being monitored/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/People being monitored/}.first
       h[:monitored] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing monitored'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Vermonters who have completed monitoring/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/People who have completed monitoring/}.first
       h[:monitored_cumulative] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing monitored cum'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total tests/}.first
+      h[:tested] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing tested'
     end
     h
   end
