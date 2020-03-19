@@ -12,4 +12,22 @@ that require manual review, and a few js page crawls are unfinished.
 The crawled data is being hosted on http://coronavirusapi.com/
 That project could also use help!
 
+For Windows users, following is required to get up and running:
+Install ruby v2.6.X latest
+	For Windows: https://rubyinstaller.org/downloads/
+After ruby install, open ruby command line and run for each “gem install <X>” for the gems to install listed below
+Gems to install
+	Ffi
+	Selenium-webdriver
+	Nokogiri
+	Byebug
+Install firefox
+Install Visual Studio runtime redist from here:
+https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
+Download geckodriver from here:
+https://github.com/mozilla/geckodriver/releases
+Copy to a location and add to your PATH
+
+
+
 Thanks, and stay safe!
