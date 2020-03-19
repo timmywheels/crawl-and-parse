@@ -6,12 +6,11 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = nil  # run for a single state
+DEBUG_ST = 'fl'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # il and ga were manually updated on server, double check next time
-# de
 # fl dashboard
 # ks - pdf different
 
@@ -275,51 +274,21 @@ end
   end
 
   def parse_de(h)
-h[:tested]
-h[:positive] = 26
-h[:negative]
-h[:pending]
-h[:deaths] = 0
-# https://dshs.maps.arcgis.com/apps/opsdashboard/index.html#/b68e95a1ebde4b628c1a776ed4f4bf27
-@driver.navigate.to @url
-puts "manual! todo"
-byebug
-=begin
-    cols = @doc.css('table')[0].text.gsub("\r",'').split("\n").map {|i| i.strip}.select {|i| i.size>0}
-    byebug unless cols.size == 10
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
-      h[:positive] = string_to_i(cols[x[1]+1])
+    @s = @s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
+    if @s =~ /https:\/\/dshs.maps.arcgis.com([^"]+)"/
+      @driver.navigate.to('https://dshs.maps.arcgis.com' + $1)
     else
-      @errors << 'missing positive'
+      @errors << 'dashboard url not found'
+      return h
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumptive Positive/}.first
-      h[:positive] = 0 unless h[:positive] 
-      h[:positive] += string_to_i(cols[x[1]+1])
+    @s = @driver.find_elements(class: 'layout-reference')[0].text
+    if @s =~ /Positive Cases\n([^\n]+)\nTotal Deaths\n([^\n]+)\n/
+      h[:positive] = string_to_i($1)
+      h[:deaths] = string_to_i($2)
     else
-      @errors << 'missing presumptive positive'
+      @errors << 'parse failed'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative/}.first
-      h[:negative] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing negative'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Pending/}.first
-      h[:pending] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing tested'
-    end
-    if cols[1] =~ /^\* As of ([^\.]+)\.M/
-      h[:date] = $1.strip + '.M'
-    else
-      @errors << 'missing date'
-    end
-begin
-    h[:tested] = h[:positive] + h[:negative] + h[:pending] 
-rescue => e
-  byebug
-  puts
-end
-=end
+    # TODO counties
     h
   end
 
