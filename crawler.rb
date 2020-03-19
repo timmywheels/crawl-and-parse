@@ -6,7 +6,7 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'pa'  # run for a single state
+DEBUG_ST = 'sc'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
@@ -19,7 +19,6 @@ SKIP_LIST = []
 # mn missing tested
 # nc table broken
 # ny
-# sc broken
 # wi
 # ma
 # nv
@@ -1220,86 +1219,69 @@ end
   end  
 
   def parse_pa(h)
-
-h[:tested]
-h[:positive]= 133
-h[:negative] = 1187
-h[:pending]
-h[:deaths]
-
     @driver.navigate.to @url
-    sleep(3)
-byebug
-return h
-begin
-    cols = @driver.find_elements(class: "ms-rteTable-default").map {|i| i.text}.select {|i| i=~/^Negative/}.first.split("\n")
-rescue => e
-  byebug
-  puts
-end
-    if @s =~ />PA COVID-19 Update – ([^<]+)</
-      h[:date] = $1.strip
+    s = @driver.find_elements(class: 'ms-rteTable-default')[0].text.gsub(',','')
+    if s =~ /Negative Positive\n([0-9]+) ([0-9]+)/
+      h[:negative] = string_to_i($1)
+      h[:positive] = string_to_i($2)
     else
-      @errors << "missing date"
+      @errors << 'missing pos neg'
     end
-    if cols[0] == "Negative Positive"
-      h[:negative] = string_to_i(cols[1])
-      h[:positive] = string_to_i(cols[2])
-      #h[:tested] = h[:positive] + h[:negative] + h[:pending]
+    h[:deaths] = 0
+    h[:county_positive] = []
+    cols = @driver.find_elements(class: 'ms-rteTable-default')[1].text.gsub(',','').split("\n").map {|i| i.strip}
+    if cols.shift == "County Cases" && cols.shift == 'Deaths'
+      for col in cols
+        if col =~ /([^\s]+) ([0-9]+) ([0-9]+)/
+          h[:deaths] += string_to_i($3)
+          h[:county_positive] << [$1, string_to_i($2)]
+        elsif col =~ /^([^\s]+) ([0-9]+)$/
+          h[:county_positive] << [$1, string_to_i($2)]
+        elsif col =~ /^([^\s]+)$/
+          h[:county_positive] << [$1]
+        elsif col =~ /^([0-9]+)$/
+          h[:county_positive].last << string_to_i($1)
+        else
+          @errors << 'county parse failed'
+        end
+      end
     else
-      @errors << "parse error"
+      @errors << "missing deaths"
     end
     h
   end
 
   def parse_ri(h)
-h[:tested]  
-h[:positive] = 33
-h[:negative] = 540
-h[:pending] = 334
-h[:deaths]
     @driver.navigate.to @url
-    sleep(6)
-byebug
-return h
-begin
-    @s = @driver.find_elements(class: 'panel')[0].text
-    rows = @driver.find_elements(class: 'google-visualization-table-table').map {|i| i.text}.select {|i| i=~/Number of Rhode Island COVID/i}[0].gsub(',','').split("\n").map{|i| i.strip}.select{|i| i.size>0}
-rescue => e
-  puts e.inspect
-  byebug
-  rows = @driver.find_elements(class: 'google-visualization-table-table').map {|i| i.text}.select {|i| i=~/Number of Rhode Island COVID/i}[0].gsub(',','').split("\n").map{|i| i.strip}.select{|i| i.size>0}
-end
-    t = rows.select {|i| i=~ /Number of Rhode Island COVID-19 positive \(including presumptive positive\) cases:/}
-    if t.size == 1 
-      h[:positive] = string_to_i(t[0].split("\s").last)
-    else
-      @errors << 'positive'
+    sec = 15
+    loop do
+      begin
+        (@s = @driver.find_elements(class: 'panel')[0].text.gsub(',','')) =~ /Number of Rhode Island COVID-19/
+        raise unless s
+        break
+      rescue
+        sleep(1)
+        sec -= 1
+        break if sec == 0
+      end
     end
-    t = rows.select {|i| i=~ /Number of people who had negative test results at RIDOH/}
-    if t.size == 1 
-      h[:negative] = string_to_i(t[0].split("\s").last)
+    cols = @s.split("\n")
+    if (x = cols.select {|v,i| v=~/^Number of Rhode Island COVID-19 positive \(including/}.first)
+      h[:positive] = string_to_i(x.strip.split.last)
     else
-      @errors << 'negative'
+      @errors << 'missing pos'
     end
-    t = rows.select {|i| i=~ /Number of people for whom tests are pending/}
-    if t.size == 1 
-      h[:pending] = string_to_i(t[0].split("\s").last)
+    if (x = cols.select {|v,i| v=~/^Number of people who had negative test results at RIDOH/}.first)
+      h[:negative] = string_to_i(x.strip.split.last)
     else
-      @errors << 'pending'
+      @errors << 'missing neg'
     end
-    t = rows.select {|i| i=~ /Approximate number of people who are currently instructed to self-quarantine in Rhode Island/}
-    if t.size == 1 
-      h[:quarantined] = string_to_i(t[0].split("\s").last)
+    if (x = cols.select {|v,i| v=~/^Number of people for whom tests are pending/}.first)
+      h[:pending] = string_to_i(x.strip.split.last)
     else
-      @errors << 'quarantined'
+      @errors << 'missing pending'
     end
-begin
-    h[:tested] = h[:positive] + h[:negative] + h[:pending]
-rescue => e
-byebug
-puts
-end
+    h[:tested] = h[:positive].to_i + h[:negative].to_i + h[:pending].to_i
     h
   end
 
