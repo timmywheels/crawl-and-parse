@@ -6,7 +6,7 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'ga'  # run for a single state
+DEBUG_ST = 'il'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
@@ -14,17 +14,15 @@ SKIP_LIST = []
 
 # il and ga were manually updated on server
 
-# ga
+# or site down
 # la
 # me
 # mn missing tested
 # nc table broken
 # ny
-# or site down
 # pa broken
 # sc broken
 # wi
-# il
 # ma
 # nv
 
@@ -387,27 +385,25 @@ byebug
 
   def parse_ga(h)
     @driver.navigate.to @url
-begin
-    loop do
-      sleep(1)
-      puts "sleeping for #{@st}"
-      @s = @driver.find_elements(id: 'cont1')[0].text
-      break if @s.size > 10
-    end
-rescue => e
-  byebug
-  puts
-end
-    if @s =~ /\nTotal ([^\s]+) /
+    cols = @driver.find_elements(class:'stacked-row-plus').map {|i| i.text.gsub(',','')}.select {|i| i=~/Confirmed cases and deaths in Georgia/}[0].split("\n")
+    if (x = cols.select {|v,i| v=~/^Total ([0-9]+) /}.first) && x=~/^Total ([0-9]+) /
       h[:positive] = string_to_i($1)
     else
-      @errors << "missing positive"
+      @errors << 'missing positive'
     end
-    if @s =~ /\nDeaths ([^\s]+) /
-      h[:deaths] = string_to_i($1) 
+    if (x = cols.select {|v,i| v=~/^Deaths ([0-9]+) /}.first) && x=~/^Deaths ([0-9]+) /
+      h[:deaths] = string_to_i($1)
     else
-      @errors << "missing deaths"
+      @errors << 'missing deaths'
     end
+    cols = @driver.find_elements(class:'stacked-row-plus').map {|i| i.text.gsub(',','')}.select {|i| i=~/COVID-19 Testing by Lab/}[0].split("\n")
+    if cols.size == 4
+      h[:tested] = string_to_i(cols[2].split.last) + string_to_i(cols[3].split.last)
+    else
+      @errors << 'missing tested'
+    end
+    # TODO counties
+    cols = @driver.find_elements(class:'stacked-row-plus').map {|i| i.text.gsub(',','')}.select {|i| i=~/COVID-19 Confirmed Cases by County/}[0].split("\n")
     h
   end
 
