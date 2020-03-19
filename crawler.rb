@@ -10,6 +10,17 @@ DEBUG_ST = nil  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
+# TODO
+# ma need to parse pdf
+# md broken
+# ms broken
+# nd todo
+# or get deaths
+# sd get deaths
+# ut broken, has deaths and tested
+# va
+# ri should work, but page is slow
+
 class Crawler
 
   def parse_ak(h)
