@@ -1601,15 +1601,17 @@ end
   def initialize
     @driver = Selenium::WebDriver.for :firefox
     @path = if DEBUG_FLAG
-      'debug/data/'
+       'debug/data/'
     else
-      'data/'
+       'data/'
     end
-    @path_csv = if DEBUG_FLAG
-      'debug/data_csv/'
+     @path_csv = if DEBUG_FLAG
+       'debug/data_csv/'
     else
       'data_csv/'
     end
+
+
     # load previous numbers
     lines = open('all.csv').readlines.map {|i| i.split("\t")}
     @h_prev = {}
@@ -1644,6 +1646,8 @@ end
     #quarantined
 
     skip_flag = OFFSET
+    filetime = Time.now.to_s[0..18].gsub(' ', '-')
+    filetime = filetime.gsub(':', '.')
 
     for @st, @url in (open('states.csv').readlines.map {|i| i.strip.split("\t")}.map {|st, url| [st.downcase, url]})
       puts "CRAWLING: #{@st}"
@@ -1654,13 +1658,21 @@ end
       next if SKIP_LIST.include?(@st)
 
       next unless @st == DEBUG_ST if DEBUG_ST
-      `mkdir -p #{@path}#{@st}`
+     # `mkdir -p #{@path}#{@st}`
+      
+      unless Dir.exist?("#{@path}#{@st}")
+        unless Dir.exist?("#{@path}")
+          Dir.mkdir("#{@path}")
+        end
+        Dir.mkdir("#{@path}#{@st}")
+      end 
+    
       @s = `curl -s #{@url}`
       @doc = Nokogiri::HTML(@s)
       @errors = []
       h = {:ts => Time.now, :st => @st, :source => @url}
       h = send("parse_#{@st}", h)
-      open("#{@path}#{@st}/#{Time.now.to_s[0..18].gsub(' ','_')}", 'w') {|f| f.puts @s} # @s might be modified in parse
+      open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
       count = 0
       tested_new = 0
@@ -1787,7 +1799,10 @@ end
     puts "errors:"
     puts errors_crawl.inspect
     
-    `mkdir -p #{@path_csv}`
+   # `mkdir -p #{@path_csv}`
+    unless Dir.exist?("#{@path_csv}")
+      Dir.mkdir("#{@path_csv}")
+    end
     open("#{@path_csv}stats_#{Time.now.to_s[0..15].gsub(' ','_').gsub(':','-')}.csv",'w') do |f|
       f.puts ['state', 'tested', 'cases', 'deaths'].join("\t")
       f.puts tested.to_a.map {|st, v| [st.to_s, v, positive[st], deaths[st]].join("\t")}.sort
