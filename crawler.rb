@@ -6,21 +6,19 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'il'  # run for a single state
+DEBUG_ST = 'pa'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # TODO fix
 
-# il and ga were manually updated on server
+# il and ga were manually updated on server, double check next time
 
-# or site down
 # la
 # me
 # mn missing tested
 # nc table broken
 # ny
-# pa broken
 # sc broken
 # wi
 # ma
@@ -1196,50 +1194,27 @@ end
   end  
 
   def parse_or(h)
-h[:tested] = 1248
-h[:positive] = 65
-h[:negative] = 968
-h[:pending] = 215
-h[:deaths] = 1
-
-@driver.navigate.to @url
-
-byebug
-
-return h
-    begin
-      x = @doc.css('table')[0].css('tr')[0].text.gsub("\r",'')
-      if x =~ /As of (.*)/
-        h[:date] = $1
-      end
-      x = @doc.css('table')[0].css('tr')[1].text.gsub("\r",'').split("\n")
-      byebug unless x[0] == "Positive"
-      h[:positive] = string_to_i(x[1])
-      x = @doc.css('table')[0].css('tr')[2].text.gsub("\r",'').split("\n")
-      byebug unless x[0] =~ /^Negative/
-      h[:negative] = string_to_i(x[1])
-      x = @doc.css('table')[0].css('tr')[3].text.gsub("\r",'').split("\n")
-      byebug unless x[0] == "Pending"
-      h[:pending] = string_to_i(x[1])
-      x = @doc.css('table')[0].css('tr')[4].text.gsub("\r",'').split("\n")
-      h[:tested] = string_to_i(x[1])
-      x = @doc.css('table')[1].css('tr')[0].text.gsub("\r",'')
-      if x =~ /Last updated (.*)/
-        h[:pum_date] = $1
-      end
-      x = @doc.css('table')[1].css('tr')[1].text.gsub("\r",'').split("\n")
-      byebug unless x[0] == "Currently under monitoring"
-      h[:pum_current] = x[1].to_i
-      x = @doc.css('table')[1].css('tr')[2].text.gsub("\r",'').split("\n")
-      byebug unless x[0] == "PUM who have"
-      h[:pum_complete] = x[-1].to_i
-      x = @doc.css('table')[1].css('tr')[3].text.gsub("\r",'').split("\n")
-      byebug unless x[0] =~ /^Total PUM/
-      h[:pum_total] = x[1].to_i
-      h[:pui] = h[:pum_current]
-      h[:pui_cumulative] = h[:pum_total]
-    rescue => e
-      @errors << "failed to parse: #{e.inspect}"
+    @driver.navigate.to @url
+    cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Oregon Test Results as of /}.first.split("\n")
+    if (x = cols.select {|v,i| v=~/^Positive ([0-9]+)/}.first) && x=~/^Positive ([0-9]+)/
+      h[:positive] = string_to_i($1)
+    else
+      @errors << 'missing positive'
+    end
+    if (x = cols.select {|v,i| v=~/^Negative ([0-9]+)/}.first) && x=~/^Negative ([0-9]+)/
+      h[:negative] = string_to_i($1)
+    else
+      @errors << 'missing negative'
+    end
+    if (x = cols.select {|v,i| v=~/^Pending ([0-9]+)/}.first) && x=~/^Pending ([0-9]+)/
+      h[:pending] = string_to_i($1)
+    else
+      @errors << 'missing pending'
+    end
+    if (x = cols.select {|v,i| v=~/^Total /}.first) 
+      h[:tested] = string_to_i(x.split.last)
+    else
+      @errors << 'missing tested'
     end
     h
   end  
