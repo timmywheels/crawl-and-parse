@@ -6,12 +6,11 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'fl'  # run for a single state
+DEBUG_ST = 'ks'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
 # il and ga were manually updated on server, double check next time
-# fl dashboard
 # ks - pdf different
 
 class Crawler
@@ -307,9 +306,35 @@ end
       @errors << 'missing deaths'
     end
 # https://fdoh.maps.arcgis.com/apps/opsdashboard/index.html#/8d0de33f260d444c852a615dc7837c86
-puts 'negative manual'
-byebug
-
+# @driver.find_elements(class: 'button--orange').first.click
+    if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
+      url = $1 + 'arcgis.com' + $2
+      @driver.navigate.to url
+      sec = 15
+      loop do
+        if @driver.page_source =~ /https:\/\/arcg.is([^"]+)"/
+          @driver.navigate.to(url = 'https://arcg.is' + $1)
+          @driver.find_elements(class: 'tab-title')[1].click
+          s = @driver.find_elements(class: 'dashboard-page')[0].text
+          if s =~ /\nTotal Tests\n([^\n]+)\n/
+            h[:tested] = string_to_i($1)
+          else
+            @errors << 'missing tested'
+          end
+          break
+        else
+          sec -= 1
+          puts 'sleeping'
+          sleep 1
+          if sec == 0
+            @errors << '2nd dash link not found'
+            break
+          end
+        end
+      end
+    else
+      @errors << 'dashboard not found'
+    end
     h
   end # parse_fl
 
