@@ -6,12 +6,9 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'ks'  # run for a single state
+DEBUG_ST = nil  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
-
-# il and ga were manually updated on server, double check next time
-# ks - pdf different
 
 class Crawler
 
@@ -517,24 +514,22 @@ end
   end
 
   def parse_ks(h)
+    puts 'pdf might have more data'
     @driver.navigate.to @url
-    sleep(2)
-begin
-    s = @driver.find_elements(class: 'alert-info').map {|i| i.text}.select {|i| i=~/Confirmed Positive Test /}.first.gsub(',','')
-rescue => e
-  byebug
-  puts
-end
-    if s =~ /([^:]+): ([^\s]+) Confirmed Positive Test Res/
-      h[:date] = $1
-      h[:positive] = string_to_i($1)
-    else
-      @errors << 'missing positive'
-    end
-    if s =~ / ([^\s]+) Negative Test Result/
-      h[:negative] = string_to_i($1)
-    else
-      @errors << 'missing negative'
+    sec = 15
+    loop do
+      @s = @driver.page_source
+      if @s.gsub(',','') =~ /([0-9]+) Confirmed Positive Test Res/
+        h[:positive] = string_to_i($1)
+        break
+      end
+      sec -= 1
+      puts 'sleeping'
+      sleep 1
+      if sec == 0
+        @errors << 'missing positive'
+        break
+      end
     end
     h
   end
