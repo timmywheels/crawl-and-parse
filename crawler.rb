@@ -211,11 +211,11 @@ byebug # was missing before
   end
 
   def parse_ct(h)
-    #@driver.navigate.to @url
-    @s = @doc.css('body')[0].text.gsub(',','')
-    #if @s =~ /Total patients who tested positive \(including presumptive positive\): ([0-9]+)[^0-9]/
-    if @s.gsub(',','') =~ /Total patients tested positive: ([0-9]+)/
-      h[:positive] = string_to_i($1)
+#@driver.navigate.to @url
+# byebug
+    cols = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
+    if cols[3] == "Positive Cases" && cols[-2] == 'Total'
+      h[:positive] = string_to_i(cols[-1])
     else
       @errors << 'missing positive'
     end
