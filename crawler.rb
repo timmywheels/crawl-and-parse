@@ -11,6 +11,9 @@ OFFSET = nil
 SKIP_LIST = []
 
 # il and ga were manually updated on server, double check next time
+# de
+# fl dashboard
+# ks - pdf different
 
 class Crawler
 
@@ -199,52 +202,24 @@ byebug # was missing before
   end
 
   def parse_co(h)
+#@driver.navigate.to @url
+#byebug
     s = @doc.css('body').text.gsub(',','')
-    if s=~ /Positive.?: ([0-9]+)[^0-9]/
+    if s =~ /\n([0-9]+) cases\n([0-9]+) hospitalized\n([0-9]+) counties\n([0-9]+) people tested\n([0-9]+) deaths/
       h[:positive] = string_to_i($1)
+      h[:tested] = string_to_i($4)
+      h[:deaths] = string_to_i($5)
     else
-      @errors << "missing positive"
-    end
-    if s=~ /Indeterminate - treated as a positive: ([0-9]+)[^0-9]/
-      h[:positive] += string_to_i($1)
-    else
-      @errors << "missing positive 2"
-    end
-    if s=~ /Negative.?.?: ([0-9]+)[^0-9]/
-      h[:negative] = string_to_i($1)
-    else
-      @errors << "missing negative"
-    end
-    if s =~ /Total number of people tested at the state lab.?.?: ([0-9]+)[^0-9]/i
-      h[:tested] = string_to_i($1)
-    else
-      @errors << "missing tested"
-    end
-    if @s=~ />UPDATED: ([^<]+)</
-      h[:date] = $1.strip
-    else
-      @errors << "missing date"
-    end
-    h[:pending] = 0
-    if s =~ /Deaths:One female in her 80s from El Paso CountyAge:/
-      h[:deaths] = 1
-    else
-      @errors << 'deaths changed'
+      @errors << "parse failed"
     end
     h
   end
 
   def parse_ct(h)
     #@driver.navigate.to @url
-=begin
-h[:tested] = 136
-h[:positive] = 11
-h[:negative] = 125
-h[:pending] = 0
-h[:deaths] 
-=end
     @s = @doc.css('body')[0].text.gsub(',','')
-    if @s =~ /Total patients who tested positive \(including presumptive positive\): ([0-9]+)[^0-9]/
+    #if @s =~ /Total patients who tested positive \(including presumptive positive\): ([0-9]+)[^0-9]/
+    if @s.gsub(',','') =~ /Total patients tested positive: ([0-9]+)/
       h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
@@ -301,13 +276,13 @@ end
 
   def parse_de(h)
 h[:tested]
-h[:positive] = 25
+h[:positive] = 26
 h[:negative]
 h[:pending]
 h[:deaths] = 0
 # https://dshs.maps.arcgis.com/apps/opsdashboard/index.html#/b68e95a1ebde4b628c1a776ed4f4bf27
 @driver.navigate.to @url
-puts "manual!"
+puts "manual! todo"
 byebug
 =begin
     cols = @doc.css('table')[0].text.gsub("\r",'').split("\n").map {|i| i.strip}.select {|i| i.size>0}
@@ -613,8 +588,8 @@ end
   end
 
   def parse_ma(h)
-h[:tested] = 1367 + 164 + 220
-h[:positive] = 218
+h[:tested] = 1743 + 306 + 222
+h[:positive] = 256
 h[:negative]
 h[:pending]
 h[:deaths] 
@@ -840,9 +815,9 @@ end
     # TODO weird js
     puts "challenging js for nd"
 
-h[:tested] = 274
-h[:positive] = 6
-h[:negative] = 268
+h[:tested] = 362
+h[:positive] = 7
+h[:negative] = 355
 h[:pending] = 0
 h[:deaths] = 0
 
@@ -1368,8 +1343,8 @@ end
   def parse_va(h)
     puts "tableu for va"
     @driver.navigate.to @url
-h[:tested] = 1028
-h[:positive] = 67
+h[:tested] = 1278
+h[:positive] = 77
 h[:negative]
 h[:pending]
 h[:deaths]
