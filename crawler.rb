@@ -6,7 +6,7 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'sc'  # run for a single state
+DEBUG_ST = 'la'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
@@ -14,7 +14,6 @@ SKIP_LIST = []
 
 # il and ga were manually updated on server, double check next time
 
-# la
 # me
 # mn missing tested
 # nc table broken
@@ -1287,11 +1286,21 @@ end
 
   def parse_sc(h)
     @driver.navigate.to @url
-h[:deaths] = 1
-# https://gis.dhec.sc.gov/gisportal/apps/opsdashboard/index.html#/01dc14d19ed04018981e4bee69acdb3b
-byebug
-    rows = @driver.find_elements(id: 'dmtable')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if rows.select {|i| i=~/Negative tests/}[0].gsub(',','') =~ /Negative tests ([0-9]+)/
+    sec = 15
+    rows = []
+    loop do
+      begin
+        rows = @driver.find_elements(id: 'dmtable')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+        raise if rows.size == 0
+        break
+      rescue => e
+        sec -= 1
+        break if sec == 0
+        puts 'sleeping'
+        sleep(1)
+      end
+    end
+    if rows.select {|i| i=~/Negative tests /}[0].gsub(',','') =~ /Negative tests \(Public Health Laboratory only\) ([0-9]+)/
       h[:negative] = string_to_i($1)
     else
       @errors << "missing negative"
@@ -1302,7 +1311,18 @@ byebug
       @errors << "missing positive"
     end
     h[:pending] = 0
-    h[:tested] = h[:positive] + h[:negative]
+    h[:tested] = h[:positive].to_i + h[:negative].to_i
+    if @driver.page_source =~ /iframe src="([^"]+)"/
+      iframe = $1
+      @driver.navigate.to iframe
+      if x=@driver.find_elements(class: 'dock-element').map {|i| i.text.gsub(',','')}.select {|i| i=~/Deaths in Individuals with COVID-19 infection/}.first
+        h[:deaths] = string_to_i(x.split("\n").last)
+      else
+        @errors << 'missing deaths'
+      end
+    else
+      @errors << 'missing iframe'
+    end
     h
   end
 
