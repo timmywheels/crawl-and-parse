@@ -18,4 +18,4 @@ Thanks, and stay safe!
 
 - Install [bundle](https://bundler.io/). Bundler provides a consistent environment for Ruby projects by tracking and installing the exact gems and versions that are needed.
 - If bundle is installed, run `bundle install` to install dependencies
-- Run `ruby crawler.rb`. This script reads `states.csv` which contains a URL to a coronavirus webpage for each state in the USA, including DC.
+- Run `ruby crawler.rb`. This script reads `states.csv` which contains a URL to a coronavirus webpage for each state in the USA, including DC. It crawls these webpages and collects the data for each state. It compares the previously scraped data with the current scraped data and saves all the data into `all.csv`.
