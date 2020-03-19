@@ -6,7 +6,7 @@ USER_FLAG = true # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'la'  # run for a single state
+DEBUG_ST = 'me'  # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 
@@ -14,7 +14,6 @@ SKIP_LIST = []
 
 # il and ga were manually updated on server, double check next time
 
-# me
 # mn missing tested
 # nc table broken
 # ny
@@ -599,27 +598,23 @@ end
   end
 
   def parse_la(h)
-=begin
-h[:tested]= 531
-h[:positive] = 196
-h[:negative]
-h[:pending]
-h[:deaths] = 4
-=end
     @driver.navigate.to @url
-# TODO
-byebug
-return h
-    @s = @driver.find_elements(class: 'dashboard-page')[0].text 
+    if @s =~ /src="https:\/\/www.arcgis.com([^"]+)/
+      @driver.navigate.to('https://www.arcgis.com' + $1)
+    else
+      @errors << 'link failed'
+      return h
+    end
+    @s = @driver.find_elements(class: 'layout-reference')[0].text
     if @s =~ /\nData updated:([^\n]+)\n/
       h[:date] = $1.strip
     else
       @errors << 'missing date'
     end
-    if @s =~ /Information\n([^\n]+)\nCases Reported\n([^\n]+)\nTests Completed by State Lab\n([^\n]+)\nDeaths Reported/
-      h[:tested] = string_to_i($2)
+    if @s =~ /Information\n([^\n]+)\nCases Reported\*?\n([^\n]+)\nDeaths Reported\nTests Completed by State Lab\n([^\n]+)\n/
+      h[:tested] = string_to_i($3)
       h[:positive] = string_to_i($1)
-      h[:deaths] = string_to_i($3)
+      h[:deaths] = string_to_i($2)
     else
       @errors << 'parse failed'
     end
