@@ -1,0 +1,29 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    archive-zip (0.12.0)
+      io-like (~> 0.3.0)
+    byebug (11.1.1)
+    childprocess (3.0.0)
+    geckodriver-helper (0.24.0)
+      archive-zip (~> 0.7)
+    io-like (0.3.1)
+    mini_portile2 (2.4.0)
+    nokogiri (1.10.9)
+      mini_portile2 (~> 2.4.0)
+    rubyzip (2.3.0)
+    selenium-webdriver (3.142.7)
+      childprocess (>= 0.5, < 4.0)
+      rubyzip (>= 1.2.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  byebug (~> 11.1)
+  geckodriver-helper (~> 0.24.0)
+  nokogiri (~> 1.10)
+  selenium-webdriver (~> 3.142)
+
+BUNDLED WITH
+   1.17.3
