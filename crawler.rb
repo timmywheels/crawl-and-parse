@@ -13,6 +13,8 @@ OFFSET = nil
 SKIP_LIST = []
 SEC = 30 # seconds to wait for page to load
 
+# NV
+
 # TODO
 # IA! new page, is an image :(
 # ma need to parse pdf
@@ -29,7 +31,7 @@ class Crawler
     else
       @errors << 'missing positive'
     end
-    puts 'tested in image'
+    puts 'AK: tested in image'
     byebug unless AUTO_FLAG
     h[:tested]
     h
@@ -730,13 +732,21 @@ byebug
   end
 
   def parse_ms(h)
-    h[:positive] = @doc.css('table').map {|i| (i.text =~ /\n Total([0-9]+)\r/) && string_to_i($1)}.max
+    @driver.navigate.to @url
+# TODO get counties
+    if (s=@driver.find_elements(class: 'rightColumn').map {|i| i.text}.select {|i| i=~/All Mississippi cases to date/}.first) && s.gsub(',','')=~/Total ([0-9]+) ([0-9]+)/
+      h[:positive] = string_to_i($1)
+      h[:deaths] = string_to_i($2)
+    else
+      @errors << 'missing positive and deaths'
+    end
     s = @doc.css('body').text.gsub(',','')
     if s =~ /Total individuals tested for COVID-19: ([0-9]+)[^0-9]/i
       h[:tested] = string_to_i($1)
     else
       @errors << 'missing tested'
     end
+=begin
     if @s =~ /src="https:\/\/app.powerbigov.us([^"]+)"/
       @url = 'https://app.powerbigov.us' + $1
       @driver.navigate.to @url
@@ -759,6 +769,7 @@ end
     else
       @errors << 'missing url'
     end
+=end
     h
   end
 
@@ -997,8 +1008,11 @@ end
   end
 
   def parse_nv(h)
-#@driver.navigate.to @url
-#byebug
+    @driver.navigate.to(@url) rescue nil
+    # TODO
+    h[:skip]=true
+return h
+byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if cols[1] =~ /Last updated (.*)/
       h[:date] = $1
@@ -1164,7 +1178,13 @@ end
 
   def parse_pa(h)
     @driver.navigate.to @url
-    s = @driver.find_elements(class: 'ms-rteTable-default')[0].text.gsub(',','')
+    if s = @driver.find_elements(class: 'ms-rteTable-default')[0]
+      s = s.text.gsub(',','')
+    else
+      @errors << 'parse failed'
+      byebug unless AUTO_FLAG
+      return h
+    end
     if s =~ /Negative\sPositive\s([0-9]+)\s([0-9]+)/
       h[:negative] = string_to_i($1)
       h[:positive] = string_to_i($2)
@@ -1679,6 +1699,7 @@ end
     tested   = {:all => 0}
     positive = {:all => 0}
     deaths   = {:all => 0}
+
     pui      = {:all => 0}
     #pui_cumulative
     #quarantined
@@ -1692,12 +1713,9 @@ end
 
       skip_flag = false if @st == OFFSET
       next if skip_flag
-
       next if SKIP_LIST.include?(@st)
-
       next unless @st == DEBUG_ST if DEBUG_ST
-     # `mkdir -p #{@path}#{@st}`
-      
+      # `mkdir -p #{@path}#{@st}`
       unless Dir.exist?("#{@path}#{@st}")
         unless Dir.exist?("#{@path}")
           Dir.mkdir("#{@path}")
@@ -1709,8 +1727,13 @@ end
       @doc = Nokogiri::HTML(@s)
       @errors = []
       h = {:ts => Time.now, :st => @st, :source => @url}
-      h = send("parse_#{@st}", h)
-      open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
+      begin
+        h = send("parse_#{@st}", h)
+      rescue => e
+        @errors << "parse_#{@st} crashed: #{e.inspect}"
+      end
+      unless h[:skip]
+        open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
       count = 0
       tested_new = 0
@@ -1733,78 +1756,86 @@ end
       if @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive] && @h_prev[@st][:deaths] == h[:deaths]
         # no change
       elsif @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive]
-        puts "only deaths different, old h for #{@st}"
-        puts @h_prev[@st]
-        puts "new h:"
-        puts h.inspect
-        @driver.navigate.to(@url) rescue nil
-        byebug unless AUTO_FLAG
-        puts
+        puts "only deaths changed for #{@st}"
+        puts "old h: #{@h_prev[@st]}"
+        puts "new h: #{h}"
+        unless AUTO_FLAG
+          @driver.navigate.to(@url) rescue nil
+          byebug
+          puts
+        end
       elsif @h_prev[@st][:positive] == h[:positive]
         if h[:tested] 
-          puts "tested different, positives same as old h for #{@st}"
-          puts @h_prev[@st]
-          puts "new h:"
-          puts h.inspect
-          @driver.navigate.to(@url) rescue nil
-          byebug unless AUTO_FLAG
-          puts
+          puts "tested different, positives same for #{@st}"
+          puts "old h: #{@h_prev[@st]}"
+          puts "new h: #{h}"
+          unless AUTO_FLAG
+            @driver.navigate.to(@url) rescue nil
+            byebug
+            puts
+          end
         else
           # missing tested in new
         end
       elsif !h[:positive]
         puts "missing positive for #{@st}"
-        puts h.inspect
-        @driver.navigate.to(@url) rescue nil
-        byebug unless AUTO_FLAG
-        puts
+        puts "old h: #{@h_prev[@st]}"
+        puts "new h: #{h}"
+        unless AUTO_FLAG
+          @driver.navigate.to(@url) rescue nil
+          byebug
+          puts
+        end
       elsif h[:positive] < @h_prev[@st][:positive]
         puts "positive decreased for #{@st}"
-        puts h.inspect
-        @driver.navigate.to(@url) rescue nil
-        byebug unless AUTO_FLAG
-        puts 
+        puts "old h: #{@h_prev[@st]}"
+        puts "new h: #{h}"
+        unless AUTO_FLAG
+          @driver.navigate.to(@url) rescue nil
+          byebug
+          puts 
+        end
       elsif ((h[:tested] && tested_new > h[:tested]) || count == 3 || (count == 4 && (h[:tested] != (h[:positive] + h[:negative] + h[:pending])))) && !h[:skip]
-        puts "please double check stats, old h is for #{@st}:"
-        puts @h_prev[@st]
-        puts "new h is:"
-        puts h.inspect
-        @driver.navigate.to(@url) rescue nil
-        byebug unless AUTO_FLAG
-        puts
+        puts "please double check stats, for #{@st}:"
+        puts "old h: #{@h_prev[@st]}"
+        puts "new h: #{h}"
+        unless AUTO_FLAG
+          @driver.navigate.to(@url) rescue nil
+          byebug
+          puts
+        end
       end
 
       positive[:all] += h[:positive].to_i
       positive[@st.to_sym] = h[:positive]
-
       deaths[:all] += h[:deaths].to_i
       deaths[@st.to_sym] = h[:deaths]
-
       pui[:all] += h[:pui].to_i
       pui[@st.to_sym] = h[:pui]
-
       tested[:all] += h[:tested].to_i
       tested[@st.to_sym] = h[:tested]
 
       h[:error] = @errors
 
       if @errors.size != 0 && !h[:skip]
-        puts "error in #{@st}! #{@errors.inspect}"
-        puts h.inspect
         errors_crawl << @st
-        @driver.navigate.to @url
-        byebug unless AUTO_FLAG
-        puts
+        puts "ERROR in #{@st}: #{@errors.inspect}"
+        puts "new h: #{h}"
+        unless AUTO_FLAG
+          @driver.navigate.to @url
+          byebug
+          puts
+        end
       end
 
-      if DEBUG_PAGE_FLAG
+      if DEBUG_PAGE_FLAG && !AUTO_FLAG
         @driver.navigate.to @url
         puts
         puts @st
         puts h.inspect
         puts
         puts({:tested => h[:tested], :pos => h[:positive], :neg => h[:negative], :pending => h[:pending]}.inspect)
-        byebug unless AUTO_FLAG
+        byebug 
         puts
       end
 
@@ -1819,7 +1850,13 @@ end
       h_all << h  
       # save parsed h
       open("#{@path}#{@st}.log",'a') {|f| f.puts h.inspect} if h && h.size > 0 && !(h[:skip])
-    end
+
+      puts ["Update for #{@st}", "new: [#{h[:tested]}, #{h[:positive]}, #{h[:deaths]}]", 
+                 "old: [#{@h_prev[@st][:tested]}, #{@h_prev[@st][:positive]}, #{@h_prev[@st][:deaths]}]"].join("\t")
+
+end # unless h[:skip]
+
+    end # states @st loop
 
     puts
     puts "positive:"
@@ -1837,20 +1874,18 @@ end
     puts "errors:"
     puts errors_crawl.inspect
     
-   # `mkdir -p #{@path_csv}`
+    # `mkdir -p #{@path_csv}`
     unless Dir.exist?("#{@path_csv}")
       Dir.mkdir("#{@path_csv}")
     end
+    # csv stats, but deprecated, unused
     open("#{@path_csv}stats_#{Time.now.to_s[0..15].gsub(' ','_').gsub(':','-')}.csv",'w') do |f|
       f.puts ['state', 'tested', 'cases', 'deaths'].join("\t")
       f.puts tested.to_a.map {|st, v| [st.to_s, v, positive[st], deaths[st]].join("\t")}.sort
     end
 
-    # TODO save each data type in separate csv
-
     byebug unless AUTO_FLAG
     puts "done."
-
   end # end run
 
 end # end Crawler class
