@@ -1567,15 +1567,15 @@ end
   # TODO birth is hard coded
   def search_term(word='death')
 
-#return nil
+    doc_text = @doc.text.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
 
-      if (i = (@doc.text =~ /#{word}/i)) && !(@doc.text =~ /birth/i)
+      if (i = (doc_text =~ /#{word}/i)) && !(doc_text =~ /birth/i)
         puts "found #{word} in #{@st}"
-        puts @doc.text[(i-30)..(i+30)]
+        puts doc_text[(i-30)..(i+30)]
         return true
       end
       @driver.navigate.to @url
-      if (i = (@driver.page_source =~ /#{word}/i)) && !(@doc.text =~ /birth/i)
+      if (i = (@driver.page_source =~ /#{word}/i)) && !(doc_text =~ /birth/i)
         puts "found #{word} in #{@st}"
         puts @driver.page_source[(i-30)..(i+30)]
         return true
