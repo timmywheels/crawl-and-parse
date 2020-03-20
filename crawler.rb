@@ -6,7 +6,9 @@ USER_FLAG = false # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-DEBUG_ST = 'ri' # run for a single state
+AUTO_FLAG = true # don't byebug anywhere, fail silently
+
+DEBUG_ST = nil # run for a single state
 OFFSET = nil
 SKIP_LIST = []
 SEC = 30 # seconds to wait for page to load
@@ -28,7 +30,7 @@ class Crawler
       @errors << 'missing positive'
     end
     puts 'tested in image'
-    byebug
+    byebug unless AUTO_FLAG
     h[:tested]
     h
   end
@@ -95,6 +97,13 @@ byebug # was missing before
   def parse_az(h)
 #@driver.navigate.to(@url) rescue nil
 #byebug
+
+    if AUTO_FLAG
+      puts "skipping AZ"
+      h[:skip] = true
+      return h
+    end
+
     begin
       `rm /Users/danny/Downloads/Cases_crosstab.csv`
       `rm /Users/danny/Downloads/Testing_crosstab.csv`
@@ -383,6 +392,13 @@ end
   end
 
   def parse_ia(h)
+
+    if AUTO_FLAG
+      puts "skipping IA"
+      h[:skip] = true
+      return h
+    end
+
     @driver.navigate.to @url
 h[:tested]
 h[:positive] = 44
@@ -510,7 +526,7 @@ byebug
   def parse_ky(h)
     @driver.navigate.to @url
     puts "death manual"
-    byebug
+    byebug unless AUTO_FLAG
     cols = @driver.find_elements(class: 'alert-success')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size >0}
     if (x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Number Tested:/}.first) && x[0] =~ /^Number Tested: ([0-9]+)/
       h[:tested] = string_to_i($1)
@@ -550,6 +566,13 @@ byebug
   end
 
   def parse_ma(h)
+
+    if AUTO_FLAG
+      puts 'skipping MA'
+      h[:skip] = true
+      return h
+    end
+
 h[:tested] = 1743 + 306 + 222
 h[:positive] = 256
 h[:negative]
@@ -582,7 +605,7 @@ byebug
 #@driver.navigate.to @url
 #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}.first.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    byebug unless cols.size == 8
+    byebug if cols.size != 8 && !AUTO_FLAG
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
       h[:positive] = string_to_i(cols[x[1]+3])
     else
@@ -639,7 +662,7 @@ byebug
     loop do
       begin
         cols = @driver.find_elements(id: 'body')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-        byebug unless cols.size == 13
+        byebug if cols.size != 13 && !AUTO_FLAG
         break
       rescue => e
         puts 'sleeping'
@@ -665,7 +688,7 @@ byebug
   def parse_mo(h)
     tables = tables = @doc.css('table').map {|i| i.text.gsub(',','')}
     cols = tables.select {|i| i=~/Total Patients Tested/}[0].split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    byebug unless cols.size == 8
+    byebug if cols.size != 8 && !AUTO_FLAG
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative/}.first
       h[:negative] = string_to_i(cols[x[1]+1])
     else
@@ -748,7 +771,7 @@ rescue => e
   byebug
   cols = @driver.find_elements(class: 'fluid-container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
 end
-    byebug unless cols.size == 14
+    byebug if cols.size != 14 && !AUTO_FLAG
     h[:pending] = 0
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Reported COVID\-19 Cases in Montana/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -775,7 +798,7 @@ end
     loop do
       begin
         cols = @driver.find_elements(class: 'content').map {|i| i.text}.select {|i| i=~/NC Cases/i}.last.split("\n").map{|i| i.strip}.select{|i| i.size>0}
-        byebug unless cols.size == 13
+        byebug if cols.size != 13 && !AUTO_FLAG
         break
       rescue => e
         sleep 1
@@ -803,6 +826,13 @@ end
   end
 
   def parse_nd(h)
+
+    if AUTO_FLAG
+      puts 'skipping ND'
+      h[:skip] = true
+      return h
+    end
+
     # TODO weird js
     puts "challenging js for nd"
 
@@ -1000,7 +1030,7 @@ end
     @driver.navigate.to @url
     puts "death manual"
     h[:deaths] = nil
-    byebug
+    byebug unless AUTO_FLAG
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[-2] == "Total Number of Positive Cases"
       h[:positive] = rows[-1].to_i
@@ -1016,7 +1046,13 @@ end
 begin
     cols = @driver.find_elements(class: 'odh-ads__container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
 rescue => e
-  byebug
+  if AUTO_FLAG
+    puts "skipping #{@st}"
+    h[:skip] = true
+    return h
+  else
+    byebug 
+  end
   puts
 end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
@@ -1284,7 +1320,7 @@ end
 #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if cols.size != 15
-      byebug
+      byebug unless AUTO_FLAG
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total positives in TN/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -1351,7 +1387,11 @@ h[:negative]
 h[:pending]
 h[:deaths]
 
-    byebug
+    if AUTO_FLAG
+      h[:skip] = true
+    else
+      byebug
+    end
     h
   end  
 
@@ -1463,7 +1503,7 @@ h[:deaths]
 begin
     cols = @driver.find_elements(class: 'bluebkg')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
 rescue => e
-  byebug
+  byebug unless AUTO_FLAG
   puts
 end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Positive Cases/}.first
@@ -1551,7 +1591,7 @@ end
     elsif s =~ /~(.*)/
       s = $1
     elsif s =~ /App/
-      byebug
+      byebug unless AUTO_FLAG
       ''
     end
     case s.strip
@@ -1589,7 +1629,7 @@ end
         else
           puts "invalid number string: #{s}"
           temp = nil
-          byebug
+          byebug unless AUTO_FLAG
           return temp
         end
       end
@@ -1628,7 +1668,7 @@ end
     #byebug
     if USER_FLAG
       @driver.navigate.to @url
-      byebug 
+      byebug unless AUTO_FLAG
     end
     h
   end
@@ -1693,44 +1733,44 @@ end
       if @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive] && @h_prev[@st][:deaths] == h[:deaths]
         # no change
       elsif @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive]
-        puts "only deaths different, old h"
+        puts "only deaths different, old h for #{@st}"
         puts @h_prev[@st]
         puts "new h:"
         puts h.inspect
         @driver.navigate.to(@url) rescue nil
-        byebug
+        byebug unless AUTO_FLAG
         puts
       elsif @h_prev[@st][:positive] == h[:positive]
         if h[:tested] 
-          puts "tested different, old h"
+          puts "tested different, positives same as old h for #{@st}"
           puts @h_prev[@st]
           puts "new h:"
           puts h.inspect
           @driver.navigate.to(@url) rescue nil
-          byebug
+          byebug unless AUTO_FLAG
           puts
         else
           # missing tested in new
         end
       elsif !h[:positive]
-        puts "missing positive"
+        puts "missing positive for #{@st}"
         puts h.inspect
         @driver.navigate.to(@url) rescue nil
-        byebug
+        byebug unless AUTO_FLAG
         puts
       elsif h[:positive] < @h_prev[@st][:positive]
-        puts "positive decreased"
+        puts "positive decreased for #{@st}"
         puts h.inspect
         @driver.navigate.to(@url) rescue nil
-        byebug
+        byebug unless AUTO_FLAG
         puts 
       elsif ((h[:tested] && tested_new > h[:tested]) || count == 3 || (count == 4 && (h[:tested] != (h[:positive] + h[:negative] + h[:pending])))) && !h[:skip]
-        puts "please double check stats, old h is:"
+        puts "please double check stats, old h is for #{@st}:"
         puts @h_prev[@st]
         puts "new h is:"
         puts h.inspect
         @driver.navigate.to(@url) rescue nil
-        byebug
+        byebug unless AUTO_FLAG
         puts
       end
 
@@ -1753,7 +1793,7 @@ end
         puts h.inspect
         errors_crawl << @st
         @driver.navigate.to @url
-        byebug
+        byebug unless AUTO_FLAG
         puts
       end
 
@@ -1764,14 +1804,14 @@ end
         puts h.inspect
         puts
         puts({:tested => h[:tested], :pos => h[:positive], :neg => h[:negative], :pending => h[:pending]}.inspect)
-        byebug
+        byebug unless AUTO_FLAG
         puts
       end
 
       unless h[:deaths]
         if search_term('death')
           puts h.inspect
-          byebug
+          byebug unless AUTO_FLAG
           puts
         end
       end
@@ -1808,7 +1848,7 @@ end
 
     # TODO save each data type in separate csv
 
-    byebug
+    byebug unless AUTO_FLAG
     puts "done."
 
   end # end run
