@@ -581,11 +581,19 @@ class Crawler
   # TODO download pdf
   def parse_ma(h)
     @driver.navigate.to @url
-    @s = @driver.find_elements(class: 'page-content')[0].text
-    if @s =~ /\nConfirmed cases of COVID-19 ([^\n]+)\n/
-      h[:positive] = string_to_i($1)
-    else
-      @errors << 'missing positive'
+    sec = SEC/3
+    loop do
+      @s = @driver.find_elements(class: 'page-content')[0].text
+      if @s =~ /\nConfirmed cases of COVID-19 ([^\n]+)\n/
+        h[:positive] = string_to_i($1)
+        break
+      elsif sec == 0
+        @errors << 'missing positive'
+        break
+      end
+      sec -= 1
+      puts 'sleeping'
+      sleep 1
     end
     puts "pdf? manual entry of tested from pdf"
     h[:tested] = 2666 + 940 + 485
@@ -963,7 +971,7 @@ class Crawler
     end
     @driver.navigate.to(@url)
     @s = ''
-    sec = SEC/2
+    sec = SEC
     loop do
       puts 'sleeping'
       sleep 1
@@ -1064,7 +1072,22 @@ class Crawler
 
   def parse_or(h)
     @driver.navigate.to @url
-    cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Oregon Test Results as of /}.first.split("\n")
+    sec = SEC/3
+    cols = []
+    loop do
+      begin
+        cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Oregon Test Results as of /}.first.split("\n")
+        break
+      rescue => e
+        if sec == 0
+          @errors << 'parse failed'
+          return h
+        end
+        sec -= 1
+        puts 'sleeping'
+        sleep 1
+      end
+    end # loop
     if (x = cols.select {|v,i| v=~/^Positive ([0-9]+)/}.first) && x=~/^Positive ([0-9]+)/
       h[:positive] = string_to_i($1)
     else
@@ -1086,7 +1109,7 @@ class Crawler
       @errors << 'missing tested'
     end
     @driver.find_elements(class: 'prefix-overlay-close').first.click
-    x = @driver.find_elements(class: 'btn').map {|i| [i, i.text]}.select {|i,j| j=~/Demographic Information for Pos/}.first
+    x = @driver.find_elements(class: 'btn').map {|i| [i, i.text]}.select {|i,j| j=~/Demographic Information/}.first
     x.first.click
     cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Deaths/}.first.split("\n")
     if (x = cols.select {|i| i=~/^Total ([0-9,]+) ([0-9,]+)/}.first) &&
