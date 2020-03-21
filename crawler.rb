@@ -2,7 +2,7 @@ require 'byebug'
 require 'nokogiri'
 require "selenium-webdriver"
 
-#AUTO_FLAG = false # breakpoints to check work
+AUTO_FLAG = false # breakpoints to check work
 AUTO_FLAG = true # automatic run
 
 DEBUG_ST = nil # if set, run for a single state
@@ -201,16 +201,23 @@ class Crawler
 
   def parse_ca(h)
     @driver.navigate.to @url
-    sleep(3)
-    @s = @driver.find_elements(id: 's4-workspace').first.text.gsub(/\s+/,' ')
-    if @s =~ /there are a total of (.*) positive cases and (.*) deaths in California/
-      h[:positive] = string_to_i($1)
-      h[:deaths] = string_to_i($2)
-    else
-      @errors << 'CA parse failed'
+    sec = SEC/5
+    loop do
+      @s = @driver.find_elements(id: 's4-workspace').first.text.gsub(/\s+/,' ')
+      if @s =~ /there are a total of (.*) positive cases and (.*) deaths in California/
+        h[:positive] = string_to_i($1)
+        h[:deaths] = string_to_i($2)
+        break
+      elsif sec == 0
+        @errors << 'CA parse failed'
+        break
+      end
+      sec -= 1
+      puts 'sleeping'
+      sleep 1
     end
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
-    h[:negative] = 690 # TODO hard coded
+    #h[:negative] = 690 # TODO hard coded
     h
   end
 
@@ -647,16 +654,26 @@ class Crawler
 
   def parse_mi(h)
     # TODO county, sex, age, hospitalization
-    if @s =~ /Michigan Data:<\/span>' href='([^']+)'>\&nbsp\;See Cumulative Data</
+    if @s =~ /href='([^']+)'>[^S<]+See Cumulative Data</
       @url = 'https://www.michigan.gov' + $1
     else
       @errors << 'missing url'
       return h
     end
     @driver.navigate.to @url
+    if @s =~ /Updated COVID-19 reported data has been delayed and will be displayed as soon as available/
+      @warnings << 'MI data being prepared'
+      return h
+    end
     cols = @driver.find_elements(class: 'fullContent')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
+
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total$/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
+      if cols.include?('County Cases Deaths')
+        h[:deaths] = string_to_i(cols[x[1]+2])
+      else
+        @errors << 'missing deaths'
+      end
       cols = cols[x[1]+1..-1]
     else
       @errors << 'missing positive'
@@ -664,7 +681,7 @@ class Crawler
     if x = cols.select {|v,i| v=~/^Total /}.first
       h[:tested] = string_to_i(x.split.last)
     else
-      @errors << 'missing tested'
+      @warnings << 'missing tested'
     end
     h
   end
@@ -737,15 +754,23 @@ class Crawler
 
   def parse_mt(h)
     @driver.navigate.to @url
-    sleep(4)
-begin
-    cols = @driver.find_elements(class: 'fluid-container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-rescue => e
-  byebug
-  cols = @driver.find_elements(class: 'fluid-container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-end
+    sec = SEC/3
+    cols = []
+    loop do
+      begin
+        cols = @driver.find_elements(class: 'fluid-container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+        break
+      rescue => e
+        if sec == 0
+          @errors << 'failed to parse table'
+          return h
+        end
+        sec -= 1
+        puts 'sleeping'
+        sleep 1
+      end
+    end # loop
     byebug if cols.size != 14 && !AUTO_FLAG
-    h[:pending] = 0
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Reported COVID\-19 Cases in Montana/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
@@ -893,14 +918,23 @@ end
 
   def parse_nm(h)
     @driver.navigate.to @url
-    sleep(3)
-begin
-    cols = @driver.find_elements(class: "et_pb_text_inner").map {|i| i.text}.select {|i| i=~/COVID-19 Test Results in N/}[0].split("\n")
-    @s = @driver.find_elements(class: "et_pb_text_inner").map {|i| i.text}.select {|i| i=~/COVID-19 Test Results in N/}[0]
-rescue => e
-  byebug
-  puts
-end
+    sec = SEC/3
+    cols = []
+    loop do
+      begin
+        cols = @driver.find_elements(class: "et_pb_text_inner").map {|i| i.text}.select {|i| i=~/COVID-19 Test Results in N/}[0].split("\n")
+        @s = @driver.find_elements(class: "et_pb_text_inner").map {|i| i.text}.select {|i| i=~/COVID-19 Test Results in N/}[0]
+        break
+      rescue => e
+        if sec == 0
+          @errors << 'failed to parse table'
+          return h
+        end
+        sec -= 1
+        puts 'sleeping'
+        sleep 1
+      end
+    end # loop
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = string_to_i(x[0].split.last)
     else
@@ -971,20 +1005,22 @@ end
 
   def parse_oh(h)
     @driver.navigate.to @url
-    sleep(3)
-begin
-    cols = @driver.find_elements(class: 'odh-ads__container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-rescue => e
-  if AUTO_FLAG
-    puts "skipping #{@st}"
-    h[:skip] = true
-    @errors << 'col failed'
-    return h
-  else
-    byebug 
-  end
-  puts
-end
+    sec = SEC/3
+    cols = []
+    loop do
+      begin
+        cols = @driver.find_elements(class: 'odh-ads__container')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+        break
+      rescue => e
+        if sec == 0
+          @errors << 'failed to parse table'
+          return h
+        end
+        sec -= 1
+        puts 'sleeping'
+        sleep 1
+      end
+    end # loop
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
       h[:positive] = string_to_i(cols[x[1]-1])
     else
@@ -1119,13 +1155,15 @@ end
     sec = SEC
     loop do
       begin
-        (@s = @driver.find_elements(class: 'panel')[0].text.gsub(',','')) =~ /Number of Rhode Island COVID-19/
-        raise unless s
-        break
-      rescue
-        sleep(1)
+        break if (@s = @driver.find_elements(class: 'panel')[0].text.gsub(',','')) =~ /Number of Rhode Island COVID-19 positive \(including/
+      rescue => e
         sec -= 1
-        break if sec == 0
+        if sec == 0
+          @errors << 'failed to parse'
+          return h
+        end
+        puts 'sleeping'
+        sleep(1)
       end
     end
     cols = @s.split("\n")
@@ -1158,7 +1196,10 @@ end
         break
       rescue => e
         sec -= 1
-        break if sec == 0
+        if sec == 0
+          @errors << 'failed to parse'
+          return h
+        end
         puts 'sleeping'
         sleep(1)
       end
@@ -1391,13 +1432,22 @@ end
 
   def parse_wv(h)
     @driver.navigate.to @url
-    sleep(3)
-begin
-    cols = @driver.find_elements(class: 'bluebkg')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-rescue => e
-  byebug unless AUTO_FLAG
-  puts
-end
+    sec = SEC/5
+    cols = []
+    loop do
+      begin
+        cols = @driver.find_elements(class: 'bluebkg')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+        break
+      rescue => e
+        if sec == 0
+          @errors << 'failed to parse table'
+          return h
+        end
+        sec -= 1
+        puts 'sleeping'
+        sleep 1
+      end
+    end # loop
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Positive Cases/}.first
       h[:positive] = string_to_i(cols[x[1]-1])
     else
@@ -1418,7 +1468,6 @@ end
     else
       @errors << 'missing pending'
     end
-    h[:tested] = h[:negative] + h[:positive] + h[:pending] rescue nil
     if (x=cols.select {|i| i=~/Updated:/i}.first) && x =~ /updated:(.+)/i
       h[:date] = $1.strip
     else
