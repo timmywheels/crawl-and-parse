@@ -2,33 +2,66 @@ require 'byebug'
 require 'nokogiri'
 require "selenium-webdriver"
 
-USER_FLAG = false # user enters missing data (in images, js, etc)
-DEBUG_FLAG = false # saves output to "debug/" dir
-DEBUG_PAGE_FLAG = false # review each webpage manually
-
 #AUTO_FLAG = false # breakpoints to check work
 AUTO_FLAG = true # automatic run
 
-DEBUG_ST = nil # run for a single state
-OFFSET = nil
-SKIP_LIST = []
+DEBUG_ST = nil # if set, run for a single state
+OFFSET = nil # if set, start running at that state
+SKIP_LIST = [] # skip these states
 CRAWL_LIST = [] # only crawl these states
 #CRAWL_LIST = ["az", "ia", "ma", "nd", "nv", "va"]
 
+DEBUG_PAGE_FLAG = false # review each webpage manually to check crawl
+
 SEC = 30 # seconds to wait for page to load
+
+# TODO things to fix or are broken
 
 # MI deaths missing
 # OH deaths missing
 
 # NV
 
-# TODO
 # IA! new page, is an image :(
 # ma need to parse pdf
 # nd challenging js
 # va js not parsed
 
+=begin
+
+Structure of the hash h, where STATE crawl data is stored
+
+h = {
+	:ts => Time.now, # timestamp of crawl
+	:st => @st, # 2 letter STATE abbreviation
+	:source_urls => [@url], # array of urls crawled
+	:source_texts => [], # array of source text crawled
+	:source_files => [], # array of filenames of pdfs or other files saved
+	:tested => int,
+	:positive => int,
+	:negative => int,
+	:pending => int,
+	:deaths => int,
+	:hospitalized => int,
+	:recovered => int,
+	:ts_tested => string, # update time of the specific data listed on the website
+	:ts_positive => string,
+	:ts_negative => string,
+	:ts_pending => string,
+	:ts_... # update time of other future fields
+	:counties => [ { :name => string, 
+	                 :tested => int, 
+	                 :positive => int,
+	                 :negative => int,
+	                 :deaths => int }, ... ] # array of county specific fields, note that ts is for whole county
+	:ts_counties => string
+}
+
+=end
+
 class Crawler
+
+  # parse_XXX methods for the 50 US states and DC
 
   def parse_ak(h)
     @driver.navigate.to @url
@@ -38,53 +71,52 @@ class Crawler
     else
       @errors << 'missing positive'
     end
-    puts 'AK: tested in image'
+    puts 'AK: tested data in image?'
     byebug unless AUTO_FLAG
-    h[:tested]
+    h[:tested] # TODO
     h
   end
 
   def parse_al(h)
+    # @driver.navigate.to @url
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
-if cols[3] != 'Deaths'
-    byebug unless (cols.size - 0) % 2 == 0
-    byebug unless cols[2..3] == ["County of Residence", "Cases"]
-    rows = (cols.size - 2)/2 - 2 # last should be Total
-    h[:positive] = 0
-    rows.times do |r|
-      h[:positive] += string_to_i(cols[(r+2)*2+1])
-    end
-    byebug unless cols[(rows+1)*2+2] == 'Total'
-    byebug unless h[:positive] == string_to_i(cols[(rows+1)*2+3])
-    if @s.gsub(',','') =~ />Deaths:([^<]+)</
-      h[:deaths] = string_to_i($1)
+    if cols[3] != 'Deaths'
+      byebug unless (cols.size - 0) % 2 == 0
+      byebug unless cols[2..3] == ["County of Residence", "Cases"]
+      rows = (cols.size - 2)/2 - 2 # last should be Total
+      h[:positive] = 0
+      rows.times do |r|
+    	  h[:positive] += string_to_i(cols[(r+2)*2+1])
+      end
+      byebug unless cols[(rows+1)*2+2] == 'Total'
+      byebug unless h[:positive] == string_to_i(cols[(rows+1)*2+3])
+      if @s.gsub(',','') =~ />Deaths:([^<]+)</
+    	  h[:deaths] = string_to_i($1)
+      else
+    	  @errors << 'missing deaths'
+      end
     else
-      @errors << 'missing deaths'
+      byebug unless (cols.size - 1) % 3 == 0
+      byebug unless cols[1..3] == ["County of Residence", "Cases", "Deaths"]
+      rows = (cols.size - 1)/3 - 1
+      h[:positive] = 0
+      h[:deaths] = 0
+      rows.times do |r|
+        h[:positive] += string_to_i(cols[(r+1)*3+2])
+        h[:deaths] += string_to_i(cols[(r+2)*3])
+      end
     end
-#begin changed 3/15/2020
-else
-    byebug unless (cols.size - 1) % 3 == 0
-    byebug unless cols[1..3] == ["County of Residence", "Cases", "Deaths"]
-    rows = (cols.size - 1)/3 - 1
-    h[:positive] = 0
-    h[:deaths] = 0
-    rows.times do |r|
-      h[:positive] += string_to_i(cols[(r+1)*3+2])
-      h[:deaths] += string_to_i(cols[(r+2)*3])
-    end
-end
     if @s.gsub(',','') =~ /Total unique / #patients tested: ([0-9]+)[^0-9]/
-byebug # was missing before
       h[:tested] = string_to_i($1)
     else
-      # @errors << 'missing tested'
+      @warnings << 'missing tested'
     end
     h
   end
 
   def parse_ar(h)
     @driver.navigate.to(@url)
-    @s = @driver.find_elements(id: 'contentBody')[0].text
+    @s = @driver.find_elements(id: 'contentBody')[0].text.gsub(',','')
     if @s =~ /\nConfirmed Cases of COVID-19 in Arkansas ([^\n]+)\n/
       h[:positive] = string_to_i($1)
     else
@@ -104,88 +136,71 @@ byebug # was missing before
   end
 
   def parse_az(h)
-#@driver.navigate.to(@url) rescue nil
-#byebug
-
+    #@driver.navigate.to(@url) rescue nil
+    #byebug
     if AUTO_FLAG
       puts "skipping AZ"
-      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
-
-    begin
-      `rm /Users/danny/Downloads/Cases_crosstab.csv`
-      `rm /Users/danny/Downloads/Testing_crosstab.csv`
-      @driver.navigate.to @url
-      sleep(3)
-      @driver.find_elements(class: "tabCanvas")[0].click
-      @driver.find_elements(class: "download")[0].click
-      x = @driver.find_elements(class: "tab-downloadDialog")[0]
-      x.find_elements(:css, "*")[3].click
-      @driver.find_elements(class: "tabDownloadFileButton")[0].click
-      byebug # manually save, required to set browser preferences
-      @driver.find_elements(class: "tabCanvas")[9].click
-      @driver.find_elements(class: "download")[0].click
-      x = @driver.find_elements(class: "tab-downloadDialog")[0]
-      x.find_elements(:css, "*")[3].click
-      @driver.find_elements(class: "tabDownloadFileButton")[0].click
-      sleep(2)
-      `dos2unix /Users/danny/Downloads/Cases_crosstab.csv`
-      `dos2unix /Users/danny/Downloads/Testing_crosstab.csv`
-      rows = open('/Users/danny/Downloads/Testing_crosstab.csv').readlines.map {|i| i.strip.split("\t")}
-      if i = rows.select {|i| i[0] =~ /Number of People Tested/}.first
-        h[:tested] = string_to_i(i[1])
-      else
-        @errors << "missing tested"
-      end
-      if i = rows.select {|i| i[0] =~ /Number of Positive/}.first
-        h[:positive] = string_to_i(i[1])
-      else
-        @errors << "missing positive"
-      end
-
-      if i = rows.select {|i| i[0] =~ /Number of Presumptive Positive/}.first
-        h[:positive] += string_to_i(i[1])
-      else
-        @errors << "missing positive 2"
-      end
-
-      if i = rows.select {|i| i[0] =~ /Number of Pending/}.first
-        h[:pending] = string_to_i(i[1])
-      else
-        @errors << "missing pending"
-      end
-      if i = rows.select {|i| i[0] =~ /Number of Ruled-Out/}.first
-        h[:negative] = string_to_i(i[1])
-      else
-        @errors << "missing negative"
-      end
-      rows = open('/Users/danny/Downloads/Cases_crosstab.csv').readlines.map {|i| i.strip.split("\t")}
-      if i = rows.select {|i| i[0] =~ /Total Cases/}.first
-        #byebug if string_to_i(i[1]) != h[:positive]
-        h[:positive] = string_to_i(i[1])
-      else
-        @errors << "missing total cases"
-      end
-      if i = rows.select {|i| i[0] =~ /Total Deaths/}.first
-        h[:deaths] = string_to_i(i[1])
-      else
-        @errors << "missing deaths"
-      end
-=begin
-      if s=@driver.find_elements(class: "tab-tvTitle").map {|i| i.text}.select {|i| i=~/Data last updated \| (.+)/}.first &&
-        s =~ /Data last updated \| (.+)/
-        h[:date] = $1
-      else
-        @errors << "missing date"
-      end
-=end
-      `mv /Users/danny/Downloads/Testing_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Testing_crosstab.csv`
-      `mv /Users/danny/Downloads/Cases_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Cases_crosstab.csv`
-    rescue => e
-      @errors << "az failed: #{e.inspect}"
+    `rm /Users/danny/Downloads/Cases_crosstab.csv`
+    `rm /Users/danny/Downloads/Testing_crosstab.csv`
+    @driver.navigate.to @url
+    sleep(3)
+    @driver.find_elements(class: "tabCanvas")[0].click
+    @driver.find_elements(class: "download")[0].click
+    x = @driver.find_elements(class: "tab-downloadDialog")[0]
+    x.find_elements(:css, "*")[3].click
+    @driver.find_elements(class: "tabDownloadFileButton")[0].click
+    byebug # manually save, required to set browser preferences
+    @driver.find_elements(class: "tabCanvas")[9].click
+    @driver.find_elements(class: "download")[0].click
+    x = @driver.find_elements(class: "tab-downloadDialog")[0]
+    x.find_elements(:css, "*")[3].click
+    @driver.find_elements(class: "tabDownloadFileButton")[0].click
+    sleep(2)
+    `dos2unix /Users/danny/Downloads/Cases_crosstab.csv`
+    `dos2unix /Users/danny/Downloads/Testing_crosstab.csv`
+    rows = open('/Users/danny/Downloads/Testing_crosstab.csv').readlines.map {|i| i.strip.split("\t")}
+    if i = rows.select {|i| i[0] =~ /Number of People Tested/}.first
+      h[:tested] = string_to_i(i[1])
+    else
+      @errors << "missing tested"
     end
+    if i = rows.select {|i| i[0] =~ /Number of Positive/}.first
+      h[:positive] = string_to_i(i[1])
+    else
+      @errors << "missing positive"
+    end
+    if i = rows.select {|i| i[0] =~ /Number of Presumptive Positive/}.first
+      h[:positive] += string_to_i(i[1])
+    else
+      @errors << "missing positive 2"
+    end
+    if i = rows.select {|i| i[0] =~ /Number of Pending/}.first
+      h[:pending] = string_to_i(i[1])
+    else
+      @errors << "missing pending"
+    end
+    if i = rows.select {|i| i[0] =~ /Number of Ruled-Out/}.first
+      h[:negative] = string_to_i(i[1])
+    else
+      @errors << "missing negative"
+    end
+    rows = open('/Users/danny/Downloads/Cases_crosstab.csv').readlines.map {|i| i.strip.split("\t")}
+    if i = rows.select {|i| i[0] =~ /Total Cases/}.first
+      #byebug if string_to_i(i[1]) != h[:positive]
+      h[:positive] = string_to_i(i[1])
+    else
+      @errors << "missing total cases"
+    end
+    if i = rows.select {|i| i[0] =~ /Total Deaths/}.first
+      h[:deaths] = string_to_i(i[1])
+    else
+      @errors << "missing deaths"
+    end
+    `mv /Users/danny/Downloads/Testing_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Testing_crosstab.csv`
+    `mv /Users/danny/Downloads/Cases_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Cases_crosstab.csv`
     h
   end # parse_az
 
@@ -205,8 +220,8 @@ byebug # was missing before
   end
 
   def parse_co(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     s = @doc.css('body').text.gsub(',','')
     if s =~ /\n([0-9]+) cases\n([0-9]+) hospitalized\n([0-9]+) counties\n([0-9]+) people tested\n([0-9]+) deaths/
       h[:positive] = string_to_i($1)
@@ -219,8 +234,8 @@ byebug # was missing before
   end
 
   def parse_ct(h)
-#@driver.navigate.to @url
-# byebug
+    #@driver.navigate.to @url
+    # byebug
     cols = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if cols[3] == "Positive Cases" && cols[-2] == 'Total'
       h[:positive] = string_to_i(cols[-1])
@@ -232,32 +247,7 @@ byebug # was missing before
 
   def parse_dc(h)
     @driver.navigate.to @url
-=begin
-    @s = @driver.find_elements(class: 'field-items')[0].text
-    if @s.gsub(',','') =~ /Update: ([^\n]+)\nNumber of patients under investigation for COVID\-19: ([0-9]+)\nNumber of negative results: ([0-9]+)\nNumber of pending results: ([0-9]+)\nNumber of presumptive positive results: ([0-9]+)\nNumber of presumptive positive results from other lab: ([0-9]+)/
-      h[:date] = $1.strip
-      h[:pui] = $2.to_i
-      h[:negative] = $3.to_i
-      h[:pending] = $4.to_i
-      h[:positive] = $5.to_i
-      h[:positive_other_lab] = $6.to_i
-      h[:positive] += h[:positive_other_lab]
-      h[:tested] = h[:negative] + h[:pending] + h[:positive]
-    elsif @s.gsub(',','') =~ /Update: ([^\n]+)\nNumber of patients under investigation for COVID\-19: ([0-9]+)\nNumber of negative results: ([0-9]+)\nNumber of pending results: ([0-9]+)\nNumber of presumptive positive results: ([0-9]+)/
-      h[:date] = $1.strip
-      h[:pui] = $2.to_i
-      h[:negative] = $3.to_i
-      h[:pending] = $4.to_i
-      h[:positive] = $5.to_i
-      h[:tested] = h[:negative] + h[:pending] + h[:positive]
-=end
-    sleep(2)
-begin
     @s = @driver.find_elements(id: 'page').first.text.gsub(',','').gsub(/\s+/,' ')
-rescue => e
-  byebug
-  puts
-end
     if (x = @s.scan(/Number of PHL positives: ([0-9]+)[^0-9]/)).size > 0
       h[:positive] = x.map {|i| string_to_i(i.first)}.max
     else
@@ -278,6 +268,7 @@ end
   end
 
   def parse_de(h)
+    # @driver.navigate.to @url
     @s = @s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
     if @s =~ /https:\/\/dshs.maps.arcgis.com([^"]+)"/
       @driver.navigate.to('https://dshs.maps.arcgis.com' + $1)
@@ -310,8 +301,6 @@ end
     else
       @errors << 'missing deaths'
     end
-# https://fdoh.maps.arcgis.com/apps/opsdashboard/index.html#/8d0de33f260d444c852a615dc7837c86
-# @driver.find_elements(class: 'button--orange').first.click
     if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
       url = $1 + 'arcgis.com' + $2
       @driver.navigate.to url
@@ -368,56 +357,31 @@ end
   end
 
   def parse_hi(h)
-# TODO table in image
-#@driver.navigate.to @url
-#byebug
+    # TODO table in image?
+    #@driver.navigate.to @url
+    #byebug
     if @s =~ /There have been ([^s]+) cases of COVID-19 identified in Hawaii/
       h[:positive] = string_to_i($1)
     else
-      @errors << "HI updated"
+      @errors << "HI page changed"
     end
-=begin # table removed on 3/7/2020
-    rows = @doc.css('table')[0].text.gsub(" ",' ').split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if rows[0] == "Number of Confirmed Case(s)" && rows.size == 10
-      h[:positive] = rows[1].to_i
-      @errors << "pui" unless rows[2] == "Number of Persons Under Investigation (current, testing pending)"
-      h[:pui] = rows[3].to_i
-      @errors << "pui_neg" unless rows[4] == "Number of Persons Under Investigation (closed, testing negative)"
-      h[:pui_cumulative] = rows[5].to_i + h[:pui] + h[:positive]
-      @errors << "quarantined" unless rows[6] == "Number of Persons Under Quarantine"
-      h[:quarantined] = rows[7].to_i
-      @errors << "monitored" unless rows[8] == "Number of Persons Self-Monitoring with DOH supervision"
-      h[:monitored] = rows[9].to_i
-      h[:pui] += (h[:quarantined] + h[:monitored])
-    else
-      @errors << 'bad table'
-    end
-    if @s =~ /COVID-19 Summary of Numbers as of <\/strong><strong>([^<]+)</
-      h[:date] = $1.strip
-    else
-      @errors << 'date'
-    end
-=end
     h
   end
 
   def parse_ia(h)
-
     if AUTO_FLAG
       puts "skipping IA"
-      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
-
     @driver.navigate.to @url
-h[:tested]
-h[:positive] = 44
-h[:negative]
-h[:pending]
-h[:deaths]
-puts "image!" # TODO
-byebug
+    puts "image? manual entry"
+    h[:tested]
+    h[:positive] = 44
+    h[:negative]
+    h[:pending]
+    h[:deaths]
+    byebug
     h
   end
 
@@ -473,7 +437,6 @@ byebug
 
   def parse_in(h)
     @driver.navigate.to @url
-    sleep(5)
     @s = @driver.find_elements(class: 'claro')[0].text
     rows = @s.split("\n")
     if @s =~ /Data as of ([^\n]+)\n/
@@ -564,22 +527,19 @@ byebug
   end
 
   def parse_ma(h)
-
     if AUTO_FLAG
       puts 'skipping MA'
-      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
-
-h[:tested] = 1743 + 306 + 222
-h[:positive] = 256
-h[:negative]
-h[:pending]
-h[:deaths] 
-puts 'in pdf'
+    puts "pdf? manual entry"
+    h[:tested] = 1743 + 306 + 222
+    h[:positive] = 256
+    h[:negative]
+    h[:pending]
+    h[:deaths] 
     @driver.navigate.to @url
-byebug
+    byebug
     h
   end # parse_ma
 
@@ -601,8 +561,8 @@ byebug
   end
 
   def parse_me(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}.first.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     byebug if cols.size != 8 && !AUTO_FLAG
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
@@ -693,22 +653,6 @@ byebug
     else
       @errors << 'missing negative'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumptive Positive/}.first
-      h[:positive] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 3'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^CDC Confirmed Positive/}.first
-      h[:positive] = 0 unless h[:positive]
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 2'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
-      h[:positive] = 0 unless h[:positive]
-      h[:positive] += string_to_i(cols[x[1]+1])
-=end
     if @s =~ /Confirmed cases in Missouri:([^<]+)</
       h[:positive] = string_to_i($1)
     else
@@ -742,30 +686,6 @@ byebug
     else
       @errors << 'missing tested'
     end
-=begin
-    if @s =~ /src="https:\/\/app.powerbigov.us([^"]+)"/
-      @url = 'https://app.powerbigov.us' + $1
-      @driver.navigate.to @url
-      sec = SEC
-loop do
-      if (x=@driver.find_elements(class: 'vcBody').map {|i| i.text}.select {|i| i=~/Total Deaths/}.first) &&
-        x.gsub(',','')=~/Total Deaths\n([0-9]+)Death/
-        h[:deaths] = string_to_i($1)
-        break
-      else
-        sec -= 1
-        puts 'sleeping'
-        sleep 1
-        if sec == 0
-          @errors << 'missing deaths'
-          break
-        end
-      end
-end
-    else
-      @errors << 'missing url'
-    end
-=end
     h
   end
 
@@ -833,27 +753,20 @@ end
   end
 
   def parse_nd(h)
-
     if AUTO_FLAG
       puts 'skipping ND'
-      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
-
     # TODO weird js
     puts "challenging js for nd"
-
-h[:tested] = 362
-h[:positive] = 7
-h[:negative] = 355
-h[:pending] = 0
-h[:deaths] = 0
-
-    if USER_FLAG
-      @driver.navigate.to @url
-      byebug 
-    end
+    h[:tested] = 362
+    h[:positive] = 7
+    h[:negative] = 355
+    h[:pending] = 0
+    h[:deaths] = 0
+    @driver.navigate.to @url
+    byebug 
     h
   end  
 
@@ -869,14 +782,6 @@ h[:deaths] = 0
     else
       @errors << "missing positive"
     end
-=begin
-    if @s =~ />Cases undergoing further testing at the Nebraska Public Health Lab - ([^<]+)</
-      h[:pending] = $1.to_i
-      h[:tested] += h[:pending]
-    else
-      @errors << 'missing pending'
-    end
-=end
     if @s =~ />Cases that tested negative – ([^<]+)</
       h[:negative] = $1.to_i
       h[:tested] += h[:negative]
@@ -887,33 +792,19 @@ h[:deaths] = 0
   end  
 
   def parse_nh(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons with covid/i}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons Presumptive Positive/}.first
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 2'
-    end
-=end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons with Test Pending/}.first
       h[:pending] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing pending'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons Tested \(closed, tested negative\)/}.first
-      h[:negative] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing negative'
-    end
-=end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Number of Persons Tested at NH/}.first
       h[:tested] = string_to_i(cols[x[1]+1])
     else
@@ -924,32 +815,18 @@ h[:deaths] = 0
     else
       @errors << 'missing monitored'
     end
-=begin
-    if @doc.text =~ /New Hampshire 2019 Novel Coronavirus \(COVID-19\) Summary Report \r\n\t  \(updated ([^\)]+)\)/
-      h[:date] = $1
-    else
-      @errors << "missing date"
-    end
-=end
     h
   end
 
   def parse_nj(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     cols = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/PresumptivePositive/}.first
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 2'
-    end
-=end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Negative/}.first
       h[:negative] = string_to_i(cols[x[1]+1])
     else
@@ -994,23 +871,14 @@ end
     else
       @errors << 'missing tested'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/persons tested through .* and test results are from/}.first &&
-        x[0] =~ /persons tested through (.*) and test results are from/
-      h[:date] = $1
-    else
-      @errors << 'missing date'
-    end
-=end
-    h[:pending] = 0
     h
   end
 
   def parse_nv(h)
     @driver.navigate.to(@url) rescue nil
     # TODO
+    puts "skipping NV"
     h[:skip]=true
-    @errors << 'auto skip'
 return h
 byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
@@ -1063,7 +931,7 @@ rescue => e
   if AUTO_FLAG
     puts "skipping #{@st}"
     h[:skip] = true
-    @errors << 'auto skip'
+    @errors << 'col failed'
     return h
   else
     byebug 
@@ -1075,27 +943,12 @@ end
     else
       @errors << 'missing positive'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Cumulative Number of Individuals\*\* Under Health Supervision/}.first
-      h[:pui_cumulative] = string_to_i(cols[x[1]-1])
-    else
-      @errors << 'missing pending'
-    end
-=end
-    #h[:tested] = h[:positive] + h[:pending] + h[:negative]
-=begin
-    if @s =~ /<em>Last Updated: ([^\s]+) <\/em><\/strong><\/span>/
-      h[:date] = $1
-    else
-      @errors << "missing date"
-    end
-=end
     h
   end
 
   def parse_ok(h)
-#@driver.navigate.to(@url) rescue nil
-#byebug
+    #@driver.navigate.to(@url) rescue nil
+    #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Oklahoma Test Results/}.last.split("\n").select {|i| i.strip.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(In-State\)/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -1108,13 +961,6 @@ end
     else
       @errors << 'missing positive 2'
     end
-=begin
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(Presumptive\*\)/}.first
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 2'
-    end
-=end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Deaths/}.first
       h[:deaths] = string_to_i(cols[x[1]+1])
     else
@@ -1130,14 +976,6 @@ end
     else
       @errors << 'missing pending'
     end
-    h[:tested] = h[:positive].to_i + h[:negative].to_i + h[:pending].to_i
-=begin removed 3/12/2020
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Tested/}.first
-      h[:tested] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing tested'
-    end
-=end
     h
   end  
 
@@ -1337,8 +1175,8 @@ end
   end  
 
   def parse_tn(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if cols.size != 15
       byebug unless AUTO_FLAG
@@ -1363,8 +1201,8 @@ end
   end
 
   def parse_tx(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[0] == 'Total' && rows[2] == 'Public Labs'
       h[:tested] = string_to_i(rows[1])
@@ -1400,26 +1238,25 @@ end
   end # parse_ut
 
   def parse_va(h)
-    puts "tableu for va"
-    @driver.navigate.to @url
-h[:tested] = 1278
-h[:positive] = 77
-h[:negative]
-h[:pending]
-h[:deaths]
-
     if AUTO_FLAG
+      puts "skipping VA"
       h[:skip] = true
-      @errors << 'auto skip'
-    else
-      byebug
+      return h
     end
+    puts "tableu for va TODO"
+    @driver.navigate.to @url
+    h[:tested] = 1278
+    h[:positive] = 77
+    h[:negative]
+    h[:pending]
+    h[:deaths]
+    byebug
     h
-  end  
-
+  end
+  
   def parse_vt(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     if @s =~ /Last updated: ([^<]+)</
       h[:date] = $1.strip
     else
@@ -1467,7 +1304,6 @@ h[:deaths]
       end
       break if cols.size > 0
     end
-
     x = cols.select {|i| i=~/^Negative\s+([^\s+]+)/}
     if x.size == 1 && x[0] =~ /^Negative\s+([^\s+]+)/
       h[:negative] = string_to_i($1)
@@ -1480,25 +1316,6 @@ h[:deaths]
     else
       @errors << 'missing deaths'
     end
-=begin
-    if (x=cols.select {|i| i=~/updated on/i}.first) && x =~ /updated on(.+)/
-      h[:date] = $1.strip
-    else
-      @errors << "missing date"
-    end
-    # 3/7/2020 this was removed
-    if i = (@s =~ /Number of people under public health supervision/)
-      if @s[i..(i+1000)].split("\n")[1] =~ /<td>(.+)<\/td>/
-        h[:public_health_supervision] = $1
-      else
-        @errors << "missing 1"
-      end
-    else
-      @errors << "missing monitoring, removed on 3/7/2020"
-    end
-=end
-    h[:pending] = 0
-    h[:tested] = h[:negative] + h[:positive] rescue nil
     h
   end
 
@@ -1558,8 +1375,8 @@ end
   end
 
   def parse_wy(h)
-#@driver.navigate.to @url
-#byebug
+    #@driver.navigate.to @url
+    #byebug
     if @s =~ /At this time there are ([^\s]+) reported Wyoming cases\./
       h[:positive] = string_to_i($1)
     else
@@ -1586,25 +1403,25 @@ end
 
   ######################################
 
+  # look for a word on the webpage
   # TODO birth is hard coded
   def search_term(word='death')
-
     doc_text = @doc.text.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
-
-      if (i = (doc_text =~ /#{word}/i)) && !(doc_text =~ /birth/i)
-        puts "found #{word} in #{@st}"
-        puts doc_text[(i-30)..(i+30)]
-        return true
-      end
-      @driver.navigate.to @url
-      if (i = (@driver.page_source =~ /#{word}/i)) && !(doc_text =~ /birth/i)
-        puts "found #{word} in #{@st}"
-        puts @driver.page_source[(i-30)..(i+30)]
-        return true
-      end
-      false
+    if (i = (doc_text =~ /#{word}/i)) && !(doc_text =~ /birth/i)
+      puts "found #{word} in #{@st}"
+      puts doc_text[(i-30)..(i+30)]
+      return true
+    end
+    @driver.navigate.to @url
+    if (i = (@driver.page_source =~ /#{word}/i)) && !(doc_text =~ /birth/i)
+      puts "found #{word} in #{@st}"
+      puts @driver.page_source[(i-30)..(i+30)]
+      return true
+    end
+    false
   end
 
+  # convert a string to an int
   def string_to_i(s)
     return s if s.class == Integer
     return 0 if s == "--"
@@ -1649,7 +1466,7 @@ end
         if s =~ /([0-9]+)/
           $1.to_i
         else
-          puts "invalid number string: #{s}"
+          puts "Please fix. Invalid number string: #{s}"
           temp = nil
           byebug unless AUTO_FLAG
           return temp
@@ -1660,20 +1477,10 @@ end
 
   def initialize
     @driver = Selenium::WebDriver.for :firefox
-    @path = if DEBUG_FLAG
-       'debug/data/'
-    else
-       'data/'
-    end
-     @path_csv = if DEBUG_FLAG
-       'debug/data_csv/'
-    else
-      'data_csv/'
-    end
-
-
+    @path = 'data/'
     # load previous numbers
     lines = open('all.csv').readlines.map {|i| i.split("\t")}
+    # previous state stats
     @h_prev = {}
     lines.each do |st, tested, positive, deaths, junk|
       st.downcase!
@@ -1685,16 +1492,17 @@ end
   end
 
   def method_missing(m, h)
-    puts "skipping state: #{@st}"
-    #puts "Error: all states should be covered now" # KS missing
-    #byebug
-    if USER_FLAG
-      @driver.navigate.to @url
-      byebug unless AUTO_FLAG
+    puts "method_missing called on state: #{@st}"
+    if AUTO_FLAG
+      h[:skip] = true
+      return h
     end
+    @driver.navigate.to @url
+    byebug
     h
   end
 
+  # main execution loop
   def run
     h_all = []
     errors_crawl = []
@@ -1734,7 +1542,7 @@ end
       @doc = Nokogiri::HTML(@s)
       @errors = []
       @warnings = []
-      h = {:ts => Time.now, :st => @st, :source => @url}
+      h = {:ts => Time.now, :st => @st, :source_urls => [@url], :source_texts => []}
       begin
         h = send("parse_#{@st}", h)
       rescue => e
@@ -1746,38 +1554,28 @@ end
       else
         open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
-      count = 0
-      tested_new = 0
-      count += 1 if h[:tested]
-      if h[:positive]
-        count += 1
-        tested_new += h[:positive]
-      end
-      if h[:negative]
-        count += 1
-        tested_new += h[:negative]
-      end
-      if h[:pending]
-        count += 1
-        tested_new += h[:pending]
-      end
-      # do this in the second parse_log.rb step
-      # h[:tested] = tested_new unless h[:tested]
-
-      if @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive] && @h_prev[@st][:deaths] == h[:deaths]
-        # no change
-      elsif @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive]
-        puts "only deaths changed for #{@st}"
-        puts "old h: #{@h_prev[@st]}"
-        puts "new h: #{h}"
-        unless AUTO_FLAG
-          @driver.navigate.to(@url) rescue nil
-          byebug
-          puts
+        count = 0
+        tested_new = 0
+        count += 1 if h[:tested]
+        if h[:positive]
+          count += 1
+          tested_new += h[:positive]
         end
-      elsif @h_prev[@st][:positive] == h[:positive]
-        if h[:tested] 
-          puts "tested different, positives same for #{@st}"
+        if h[:negative]
+          count += 1
+          tested_new += h[:negative]
+        end
+        if h[:pending]
+          count += 1
+          tested_new += h[:pending]
+        end
+        # do this in the second parse_log.rb step
+        # h[:tested] = tested_new unless h[:tested]
+
+        if @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive] && @h_prev[@st][:deaths] == h[:deaths]
+          # no change
+        elsif @h_prev[@st][:tested] == h[:tested] && @h_prev[@st][:positive] == h[:positive]
+          puts "only deaths changed for #{@st}"
           puts "old h: #{@h_prev[@st]}"
           puts "new h: #{h}"
           unless AUTO_FLAG
@@ -1785,90 +1583,99 @@ end
             byebug
             puts
           end
-        else
-          # missing tested in new
+        elsif @h_prev[@st][:positive] == h[:positive]
+          if h[:tested] 
+            puts "tested different, positives same for #{@st}"
+            puts "old h: #{@h_prev[@st]}"
+            puts "new h: #{h}"
+            unless AUTO_FLAG
+              @driver.navigate.to(@url) rescue nil
+              byebug
+              puts
+            end
+          else
+            # missing tested in new
+          end
+        elsif !h[:positive]
+          puts "missing positive for #{@st}"
+          puts "old h: #{@h_prev[@st]}"
+          puts "new h: #{h}"
+          unless AUTO_FLAG
+            @driver.navigate.to(@url) rescue nil
+            byebug
+            puts
+          end
+        elsif h[:positive] < @h_prev[@st][:positive]
+          puts "positive decreased for #{@st}"
+          puts "old h: #{@h_prev[@st]}"
+          puts "new h: #{h}"
+          unless AUTO_FLAG
+            @driver.navigate.to(@url) rescue nil
+            byebug
+            puts 
+          end
+        elsif ((h[:tested] && tested_new > h[:tested]) || count == 3 || (count == 4 && (h[:tested] != (h[:positive] + h[:negative] + h[:pending])))) && !h[:skip]
+          puts "please double check stats, for #{@st}:"
+          puts "old h: #{@h_prev[@st]}"
+          puts "new h: #{h}"
+          unless AUTO_FLAG
+            @driver.navigate.to(@url) rescue nil
+            byebug
+            puts
+          end
         end
-      elsif !h[:positive]
-        puts "missing positive for #{@st}"
-        puts "old h: #{@h_prev[@st]}"
-        puts "new h: #{h}"
-        unless AUTO_FLAG
-          @driver.navigate.to(@url) rescue nil
-          byebug
-          puts
+
+        positive[:all] += h[:positive].to_i
+        positive[@st.to_sym] = h[:positive]
+        deaths[:all] += h[:deaths].to_i
+        deaths[@st.to_sym] = h[:deaths]
+        pui[:all] += h[:pui].to_i
+        pui[@st.to_sym] = h[:pui]
+        tested[:all] += h[:tested].to_i
+        tested[@st.to_sym] = h[:tested]
+
+        h[:error] = @errors
+
+        warnings_crawl << { @st => @warnings } if @warnings.size > 0
+
+        if @errors.size != 0 && !h[:skip]
+          errors_crawl << { @st => @errors }
+          puts "ERROR in #{@st}: #{@errors.inspect}"
+          puts "new h: #{h}"
+          unless AUTO_FLAG
+            @driver.navigate.to @url
+            byebug
+            puts
+          end
         end
-      elsif h[:positive] < @h_prev[@st][:positive]
-        puts "positive decreased for #{@st}"
-        puts "old h: #{@h_prev[@st]}"
-        puts "new h: #{h}"
-        unless AUTO_FLAG
-          @driver.navigate.to(@url) rescue nil
-          byebug
-          puts 
-        end
-      elsif ((h[:tested] && tested_new > h[:tested]) || count == 3 || (count == 4 && (h[:tested] != (h[:positive] + h[:negative] + h[:pending])))) && !h[:skip]
-        puts "please double check stats, for #{@st}:"
-        puts "old h: #{@h_prev[@st]}"
-        puts "new h: #{h}"
-        unless AUTO_FLAG
-          @driver.navigate.to(@url) rescue nil
-          byebug
-          puts
-        end
-      end
 
-      positive[:all] += h[:positive].to_i
-      positive[@st.to_sym] = h[:positive]
-      deaths[:all] += h[:deaths].to_i
-      deaths[@st.to_sym] = h[:deaths]
-      pui[:all] += h[:pui].to_i
-      pui[@st.to_sym] = h[:pui]
-      tested[:all] += h[:tested].to_i
-      tested[@st.to_sym] = h[:tested]
-
-      h[:error] = @errors
-
-      warnings_crawl << { @st => @warnings } if @warnings.size > 0
-
-      if @errors.size != 0 && !h[:skip]
-        errors_crawl << { @st => @errors }
-        puts "ERROR in #{@st}: #{@errors.inspect}"
-        puts "new h: #{h}"
-        unless AUTO_FLAG
+        if DEBUG_PAGE_FLAG && !AUTO_FLAG
           @driver.navigate.to @url
-          byebug
           puts
-        end
-      end
-
-      if DEBUG_PAGE_FLAG && !AUTO_FLAG
-        @driver.navigate.to @url
-        puts
-        puts @st
-        puts h.inspect
-        puts
-        puts({:tested => h[:tested], :pos => h[:positive], :neg => h[:negative], :pending => h[:pending]}.inspect)
-        byebug 
-        puts
-      end
-
-      unless h[:deaths]
-        if search_term('death')
+          puts @st
           puts h.inspect
-          byebug unless AUTO_FLAG
+          puts
+          puts({:tested => h[:tested], :pos => h[:positive], :neg => h[:negative], :pending => h[:pending]}.inspect)
+          byebug 
           puts
         end
-      end
 
-      h_all << h  
-      # save parsed h
-      open("#{@path}#{@st}.log",'a') {|f| f.puts h.inspect} if h && h.size > 0 && !(h[:skip])
+        unless h[:deaths]
+          if search_term('death')
+            puts h.inspect
+            byebug unless AUTO_FLAG
+            puts
+          end
+        end
 
-      puts ["Update for #{@st}", "new: [#{h[:tested]}, #{h[:positive]}, #{h[:deaths]}]", 
-                 "old: [#{@h_prev[@st][:tested]}, #{@h_prev[@st][:positive]}, #{@h_prev[@st][:deaths]}]"].join("\t")
+        h_all << h  
+        # save parsed h
+        open("#{@path}#{@st}.log",'a') {|f| f.puts h.inspect} if h && h.size > 0 && !(h[:skip])
 
-end # unless h[:skip]
+        puts ["Update for #{@st}", "new: [#{h[:tested]}, #{h[:positive]}, #{h[:deaths]}]", 
+          "old: [#{@h_prev[@st][:tested]}, #{@h_prev[@st][:positive]}, #{@h_prev[@st][:deaths]}]"].join("\t")
 
+      end # unless h[:skip]
     end # states @st loop
 
     puts
@@ -1894,16 +1701,6 @@ end # unless h[:skip]
     puts skipped_crawl.inspect
     puts
     
-    # `mkdir -p #{@path_csv}`
-    unless Dir.exist?("#{@path_csv}")
-      Dir.mkdir("#{@path_csv}")
-    end
-    # csv stats, but deprecated, unused
-    open("#{@path_csv}stats_#{Time.now.to_s[0..15].gsub(' ','_').gsub(':','-')}.csv",'w') do |f|
-      f.puts ['state', 'tested', 'cases', 'deaths'].join("\t")
-      f.puts tested.to_a.map {|st, v| [st.to_s, v, positive[st], deaths[st]].join("\t")}.sort
-    end
-
     byebug unless AUTO_FLAG
     puts "done."
   end # end run
