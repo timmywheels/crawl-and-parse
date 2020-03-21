@@ -6,11 +6,15 @@ USER_FLAG = false # user enters missing data (in images, js, etc)
 DEBUG_FLAG = false # saves output to "debug/" dir
 DEBUG_PAGE_FLAG = false # review each webpage manually
 
-AUTO_FLAG = true # don't byebug anywhere, fail silently
+#AUTO_FLAG = false # breakpoints to check work
+AUTO_FLAG = true # automatic run
 
 DEBUG_ST = nil # run for a single state
 OFFSET = nil
 SKIP_LIST = []
+CRAWL_LIST = [] # only crawl these states
+#CRAWL_LIST = ["az", "ia", "ma", "nd", "nv", "va"]
+
 SEC = 30 # seconds to wait for page to load
 
 # MI deaths missing
@@ -1039,7 +1043,7 @@ byebug
   def parse_ny(h)
     @driver.navigate.to @url
     puts "death manual"
-    h[:deaths] = nil
+    h[:deaths] = 26 # from nyc report
     byebug unless AUTO_FLAG
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[-2] == "Total Number of Positive Cases"
@@ -1709,6 +1713,9 @@ end
     filetime = filetime.gsub(':', '.')
 
     for @st, @url in (open('states.csv').readlines.map {|i| i.strip.split("\t")}.map {|st, url| [st.downcase, url]})
+      if CRAWL_LIST.size > 0
+        next unless CRAWL_LIST.include?(@st)
+      end
       puts "CRAWLING: #{@st}"
 
       skip_flag = false if @st == OFFSET
@@ -1821,10 +1828,10 @@ end
 
       h[:error] = @errors
 
-      warnings_crawl << @st if @warnings.size > 0
+      warnings_crawl << { @st => @warnings } if @warnings.size > 0
 
       if @errors.size != 0 && !h[:skip]
-        errors_crawl << @st
+        errors_crawl << { @st => @errors }
         puts "ERROR in #{@st}: #{@errors.inspect}"
         puts "new h: #{h}"
         unless AUTO_FLAG
