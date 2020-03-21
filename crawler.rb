@@ -300,16 +300,10 @@ class Crawler
       url = $1 + 'arcgis.com' + $2
       @driver.navigate.to url
       sec = SEC
+      url = nil
       loop do
         if @driver.page_source =~ /https:\/\/arcg.is([^"]+)"/
-          @driver.navigate.to(url = 'https://arcg.is' + $1)
-          @driver.find_elements(class: 'tab-title')[1].click
-          s = @driver.find_elements(class: 'dashboard-page')[0].text
-          if s =~ /\nTotal Tests\n([^\n]+)\n/
-            h[:tested] = string_to_i($1)
-          else
-            @errors << 'missing tested'
-          end
+          url = 'https://arcg.is' + $1
           break
         else
           sec -= 1
@@ -319,6 +313,24 @@ class Crawler
             @errors << '2nd dash link not found'
             break
           end
+        end
+      end
+      if url
+        @driver.navigate.to(url)
+        sec = SEC
+        loop do
+          @driver.find_elements(class: 'tab-title')[1].click
+          s = @driver.find_elements(class: 'dashboard-page')[0].text
+          if s =~ /\nTotal Tests\n([^\n]+)\n/
+            h[:tested] = string_to_i($1)
+            break
+          elsif s == 0
+            @errors << 'missing tested'
+            break
+          end
+          sec -= 1
+          puts 'sleeping'
+          sleep 1
         end
       end
     else
@@ -447,12 +459,26 @@ class Crawler
 
   def parse_in(h)
     @driver.navigate.to @url
-    @s = @driver.find_elements(class: 'claro')[0].text
-    rows = @s.split("\n")
-    if @s =~ /Data as of ([^\n]+)\n/
-      h[:date] = $1
+    if @s =~ /<iframe[^>]+src=\"https:\/\/arcg\.is([^"]+)/
+      @url = 'https://arcg.is' + $1
     else
-      @errors << 'missing date'
+      @errors << 'missing url'
+      return h
+    end
+    @driver.navigate.to @url
+    sec = SEC/2
+    loop do
+      sec -= 1
+      puts 'sleeping'
+      sleep 1
+      @s = @driver.find_elements(class: 'claro')[0].text
+      rows = @s.split("\n")
+      if @s =~ /Data as of ([^\n]+)\n/
+        h[:date] = $1
+        break
+      elsif sec == 0
+        @warnings << 'missing date'
+      end
     end
     cols = @s.split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Positive/}.first
@@ -520,18 +546,27 @@ class Crawler
       @errors << 'link failed'
       return h
     end
-    @s = @driver.find_elements(class: 'layout-reference')[0].text
-    if @s =~ /\nData updated:([^\n]+)\n/
-      h[:date] = $1.strip
-    else
-      @errors << 'missing date'
-    end
-    if @s =~ /Information\n([^\n]+)\nCases Reported\*?\n([^\n]+)\nDeaths Reported\nTests Completed\n([^\n]+)\nby State Lab\nTests Reported to State\n([^\n]+)\n/
-      h[:tested] = string_to_i($3) + string_to_i($4)
-      h[:positive] = string_to_i($1)
-      h[:deaths] = string_to_i($2)
-    else
-      @errors << 'parse failed'
+    sec = SEC/2
+    loop do
+      sec -= 1
+      puts 'sleeping' 
+      sleep 1
+      @s = @driver.find_elements(class: 'layout-reference')[0].text
+      if @s =~ /\nData updated:([^\n]+)\n/
+        h[:date] = $1.strip
+      end
+      if @s =~ /Information\n([^\n]+)\nCases Reported\*?\n([^\n]+)\nDeaths Reported\nTests Completed\n([^\n]+)\nby State Lab\nTests Reported to State\n([^\n]+)\n/
+        h[:tested] = string_to_i($3) + string_to_i($4)
+        h[:positive] = string_to_i($1)
+        h[:deaths] = string_to_i($2)
+        break
+      elsif sec == 0
+        @errors << 'parse failed'
+        break
+      end
+    end # loop
+    unless h[:date]
+      @warnings << 'missing date'
     end
     h
   end
