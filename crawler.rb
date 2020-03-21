@@ -784,7 +784,7 @@ end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons with negative results/}.first
       h[:negative] = string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing negative'
+      @warnings << 'missing negative'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons tested for COVID-19 by MTPHL\*/i}.first
       h[:tested] = string_to_i(cols[x[1]+1])
@@ -1694,6 +1694,8 @@ end
   def run
     h_all = []
     errors_crawl = []
+    warnings_crawl = []
+    skipped_crawl = []
     tested   = {:all => 0}
     positive = {:all => 0}
     deaths   = {:all => 0}
@@ -1724,13 +1726,17 @@ end
       @s = `curl -s #{@url}`
       @doc = Nokogiri::HTML(@s)
       @errors = []
+      @warnings = []
       h = {:ts => Time.now, :st => @st, :source => @url}
       begin
         h = send("parse_#{@st}", h)
       rescue => e
         @errors << "parse_#{@st} crashed: #{e.inspect}"
       end
-      unless h[:skip]
+
+      if h[:skip]
+        skipped_crawl << @st
+      else
         open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
 
       count = 0
@@ -1815,6 +1821,8 @@ end
 
       h[:error] = @errors
 
+      warnings_crawl << @st if @warnings.size > 0
+
       if @errors.size != 0 && !h[:skip]
         errors_crawl << @st
         puts "ERROR in #{@st}: #{@errors.inspect}"
@@ -1871,6 +1879,13 @@ end # unless h[:skip]
     puts
     puts "errors:"
     puts errors_crawl.inspect
+    puts
+    puts "warnings:"
+    puts warnings_crawl.inspect
+    puts
+    puts "skipped:"
+    puts skipped_crawl.inspect
+    puts
     
     # `mkdir -p #{@path_csv}`
     unless Dir.exist?("#{@path_csv}")
