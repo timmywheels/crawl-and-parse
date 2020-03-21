@@ -13,6 +13,9 @@ OFFSET = nil
 SKIP_LIST = []
 SEC = 30 # seconds to wait for page to load
 
+# MI deaths missing
+# OH deaths missing
+
 # NV
 
 # TODO
@@ -102,6 +105,7 @@ byebug # was missing before
 
     if AUTO_FLAG
       puts "skipping AZ"
+      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
@@ -397,6 +401,7 @@ end
 
     if AUTO_FLAG
       puts "skipping IA"
+      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
@@ -414,35 +419,22 @@ byebug
 
   def parse_id(h)
     @driver.navigate.to @url
-    @s = @driver.find_elements(class: "wp-block-table")[0].text.gsub(',','').gsub(/\s+/,' ')
-    if @s =~ /^Public Health District County Cases Deaths/
-      cols = @s.split(" ")
-      cols = cols[6..-1]
-      arr = []
-      h[:positive] = 0
-      h[:deaths] = 0
-      while cols.size > 0
-        w = cols.shift
-        if w =~ /^[0-9]+$/
-          arr << string_to_i(w)
-        else
-          if (x=arr.size) > 0
-            h[:positive] += arr[0..x/2-1].sum
-            h[:deaths] += arr[x/2..-1].sum
-            arr = []
-          end
-        end
-      end
-      if (x=arr.size) > 0
-        h[:positive] += arr[0..x/2-1].sum
-        h[:deaths] += arr[x/2..-1].sum
-      end
+    @s = @driver.find_elements(class: 'wp-block-column')[0].text.gsub(',','').gsub(/\s+/,' ')
+    if (x=(@s =~ /Public Health District County Cases Deaths/)) &&
+       @s[x..-1] =~ / TOTAL\*? ([0-9]+) ([0-9]+) /
+      h[:positive] = string_to_i($1)
+      h[:deaths] = string_to_i($2)
     else
       @errors << 'missing cases and deaths'
     end
-    s = @driver.find_elements(class: "wp-block-table")[1].text.gsub(',','').gsub(/\s+/,' ')
-    if s =~ /Number of people tested at the Idaho Bureau of Laboratories\*? ([0-9]+) Number of people tested through commercial laboratories\*?\*? ([0-9]+)/
-      h[:tested] = string_to_i($1) + string_to_i($2)
+    if @s =~ /Number of people tested through the Idaho Bureau of Laboratories\*? ([0-9]+)/
+      h[:tested] = string_to_i($1)
+    else
+      @errors << 'missing tested'
+    end
+    if @s =~ /Number of people tested through commercial laboratories\*?\*? ([0-9]+)/
+      h[:tested] = 0 unless h[:tested]
+      h[:tested] += string_to_i($1)
     else
       @errors << 'missing tested'
     end
@@ -462,7 +454,7 @@ byebug
     else
       @errors << 'missing deaths'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Tested/i}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Persons Tested/i}.first
       h[:tested] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing tested'
@@ -557,8 +549,8 @@ byebug
     else
       @errors << 'missing date'
     end
-    if @s =~ /Information\n([^\n]+)\nCases Reported\*?\n([^\n]+)\nDeaths Reported\nTests Completed by State Lab\n([^\n]+)\n/
-      h[:tested] = string_to_i($3)
+    if @s =~ /Information\n([^\n]+)\nCases Reported\*?\n([^\n]+)\nDeaths Reported\nTests Completed\n([^\n]+)\nby State Lab\nTests Reported to State\n([^\n]+)\n/
+      h[:tested] = string_to_i($3) + string_to_i($4)
       h[:positive] = string_to_i($1)
       h[:deaths] = string_to_i($2)
     else
@@ -571,6 +563,7 @@ byebug
 
     if AUTO_FLAG
       puts 'skipping MA'
+      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
@@ -696,6 +689,7 @@ byebug
     else
       @errors << 'missing negative'
     end
+=begin
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumptive Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
     else
@@ -710,6 +704,9 @@ byebug
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = 0 unless h[:positive]
       h[:positive] += string_to_i(cols[x[1]+1])
+=end
+    if @s =~ /Confirmed cases in Missouri:([^<]+)</
+      h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
     end
@@ -722,11 +719,6 @@ byebug
       h[:tested] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing tested'
-    end
-    if (tables.size == 3) && (cols = tables.last.split("\n").map {|i| i.strip}.select {|i| i.size > 0}) && (cols[0]=='Positive')
-      h[:positive] += string_to_i(cols[1])
-    else
-      @errors << 'missing positive 3'
     end
     h
   end
@@ -840,6 +832,7 @@ end
 
     if AUTO_FLAG
       puts 'skipping ND'
+      @errors << 'auto skip'
       h[:skip] = true
       return h
     end
@@ -946,17 +939,19 @@ h[:deaths] = 0
     else
       @errors << 'missing positive'
     end
+=begin
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/PresumptivePositive/}.first
       h[:positive] += string_to_i(cols[x[1]+1])
     else
       @errors << 'missing positive 2'
     end
+=end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Negative/}.first
       h[:negative] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing negative'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons underinvestigation/i}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^PUI pending/i}.first
       h[:pending] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing pending'
@@ -1011,6 +1006,7 @@ end
     @driver.navigate.to(@url) rescue nil
     # TODO
     h[:skip]=true
+    @errors << 'auto skip'
 return h
 byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
@@ -1063,6 +1059,7 @@ rescue => e
   if AUTO_FLAG
     puts "skipping #{@st}"
     h[:skip] = true
+    @errors << 'auto skip'
     return h
   else
     byebug 
@@ -1409,6 +1406,7 @@ h[:deaths]
 
     if AUTO_FLAG
       h[:skip] = true
+      @errors << 'auto skip'
     else
       byebug
     end
