@@ -1000,7 +1000,7 @@ class Crawler
   def parse_ny(h)
     @driver.navigate.to @url
     puts "death manual"
-    h[:deaths] = 26 # from nyc report
+    h[:deaths] = 43 # from nyc report TODO
     byebug unless AUTO_FLAG
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[-2] == "Total Number of Positive Cases"
