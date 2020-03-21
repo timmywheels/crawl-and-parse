@@ -9,7 +9,7 @@ DEBUG_ST = nil # if set, run for a single state
 OFFSET = nil # if set, start running at that state
 SKIP_LIST = [] # skip these states
 CRAWL_LIST = [] # only crawl these states
-#CRAWL_LIST = ["az", "ia", "ma", "nd", "nv", "va"]
+#CRAWL_LIST = ["az", "nd", "va"]
 
 DEBUG_PAGE_FLAG = false # review each webpage manually to check crawl
 
@@ -171,11 +171,6 @@ class Crawler
       h[:positive] = string_to_i(i[1])
     else
       @errors << "missing positive"
-    end
-    if i = rows.select {|i| i[0] =~ /Number of Presumptive Positive/}.first
-      h[:positive] += string_to_i(i[1])
-    else
-      @errors << "missing positive 2"
     end
     if i = rows.select {|i| i[0] =~ /Number of Pending/}.first
       h[:pending] = string_to_i(i[1])
@@ -369,19 +364,34 @@ class Crawler
   end
 
   def parse_ia(h)
-    if AUTO_FLAG
-      puts "skipping IA"
-      h[:skip] = true
-      return h
+    @driver.navigate.to @url
+    if @driver.page_source =~ /<iframe src=\"https:\/\/iowa\.maps\.arcgis\.com([^"]+)"/
+      @url = 'https://iowa.maps.arcgis.com' + $1
+    else # might be captcha
+      if AUTO_FLAG
+        @errors << 'missing dash url, possible captcha'
+        return h
+      end
+      puts "check if captcha, missing @url"
+      byebug
+      nil
     end
     @driver.navigate.to @url
-    puts "image? manual entry"
-    h[:tested]
-    h[:positive] = 44
-    h[:negative]
-    h[:pending]
-    h[:deaths]
-    byebug
+    sec = SEC/2
+    loop do
+      sec -= 1
+      sleep 1
+      puts 'sleeping'
+      x = @driver.find_elements(class: 'dock-container')[0]
+      if x && (x=x.text.gsub(',','')) =~ /\nConfirmed Cases\n([^\n]+)\n/
+        h[:positive] = string_to_i($1)
+        break
+      elsif sec == 0
+        @errors << 'missing positive'
+        break
+      end
+    end
+    # TODO counties is available in x
     h
   end
 
@@ -526,20 +536,18 @@ class Crawler
     h
   end
 
+  # TODO download pdf
   def parse_ma(h)
-    if AUTO_FLAG
-      puts 'skipping MA'
-      h[:skip] = true
-      return h
-    end
-    puts "pdf? manual entry"
-    h[:tested] = 1743 + 306 + 222
-    h[:positive] = 256
-    h[:negative]
-    h[:pending]
-    h[:deaths] 
     @driver.navigate.to @url
-    byebug
+    @s = @driver.find_elements(class: 'page-content')[0].text
+    if @s =~ /\nConfirmed cases of COVID-19 ([^\n]+)\n/
+      h[:positive] = string_to_i($1)
+    else
+      @errors << 'missing positive'
+    end
+    puts "pdf? manual entry of tested from pdf"
+    h[:tested] = 2666 + 940 + 485
+    byebug unless AUTO_FLAG
     h
   end # parse_ma
 
@@ -564,7 +572,7 @@ class Crawler
     #@driver.navigate.to @url
     #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}.first.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    byebug if cols.size != 8 && !AUTO_FLAG
+    if cols.size == 8
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
       h[:positive] = string_to_i(cols[x[1]+3])
     else
@@ -574,12 +582,24 @@ class Crawler
       h[:positive] = 0 unless h[:positive]
       h[:positive] += string_to_i(cols[x[1]+3])
     else
-      @errors << 'missing positive 2'
+      @warnings << 'missing positive 2'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative Tests/}.first
       h[:negative] = string_to_i(cols[x[1]+3])
     else
       @errors << 'missing negative'
+    end
+    elsif cols.size == 6
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed Cases/}.first
+      h[:positive] = string_to_i(cols[x[1]+2])
+    else
+      @errors << 'missing positive'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative Tests/}.first
+      h[:negative] = string_to_i(cols[x[1]+2])
+    else
+      @errors << 'missing negative'
+    end
     end
     if x = cols.select {|i| i=~/^Updated: (.*)/}.first
       x=~/^Updated: (.*)/
@@ -645,28 +665,19 @@ class Crawler
   end  
 
   def parse_mo(h)
-    tables = tables = @doc.css('table').map {|i| i.text.gsub(',','')}
-    cols = tables.select {|i| i=~/Total Patients Tested/}[0].split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    byebug if cols.size != 8 && !AUTO_FLAG
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative/}.first
-      h[:negative] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing negative'
-    end
-    if @s =~ /Confirmed cases in Missouri:([^<]+)</
-      h[:positive] = string_to_i($1)
-    else
-      @errors << 'missing positive'
-    end
+    # TODO click to get county
+    #@driver.navigate.to @url
+    tables = @doc.css('table').map {|i| i.text.gsub(',','')}
+    cols = tables.select {|i| i=~/Deaths/}[0].split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Deaths/}.first
       h[:deaths] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing deaths'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Patients Tested/}.first
-      h[:tested] = string_to_i(cols[x[1]+1])
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
+      h[:positive] = string_to_i(cols[x[1]+1])
     else
-      @errors << 'missing tested'
+      @errors << 'missing positive'
     end
     h
   end
@@ -758,11 +769,10 @@ end
       h[:skip] = true
       return h
     end
-    # TODO weird js
-    puts "challenging js for nd"
-    h[:tested] = 362
-    h[:positive] = 7
-    h[:negative] = 355
+    puts "image file for ND"
+    h[:tested] = 1169
+    h[:positive] = 28
+    h[:negative] = 1141
     h[:pending] = 0
     h[:deaths] = 0
     @driver.navigate.to @url
@@ -876,35 +886,37 @@ end
 
   def parse_nv(h)
     @driver.navigate.to(@url) rescue nil
-    # TODO
-    puts "skipping NV"
-    h[:skip]=true
-return h
-byebug
-    cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if cols[1] =~ /Last updated (.*)/
-      h[:date] = $1
+    if @s =~ /"https:\/\/app\.powerbigov([^"]+)"/
+      @url = 'https://app.powerbigov' + $1
     else
-      @errors << "missing date"
+      @errors << 'bi url not found'
+      return h
     end
-
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Confirmed/}.first
-      h[:positive] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Presumptive/}.first
-      h[:positive] += string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing positive 2'
-    end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Negative/}.first
-      h[:negative] = string_to_i(cols[x[1]+1])
-    else
-      @errors << 'missing negative'
-    end
-    h[:pending] = 0
-    h[:tested] = h[:positive] + h[:negative] rescue nil
+    @driver.navigate.to(@url)
+    @s = ''
+    sec = SEC/2
+    loop do
+      puts 'sleeping'
+      sleep 1
+      sec -= 1
+      if sec == 0
+        @errors << 'failed to load'
+        return h
+      end
+      x = @driver.find_elements(class: 'landingController')[0]
+      @s = x.text.gsub(',','') if x
+      if (@s =~ /\n([0-9]+)Deaths Statewide\n/) && (@s =~ /\n([0-9]+)People Tested\n/) && (@s =~ /All\n([0-9]+)Negative\n([0-9]+)Positive\nResult/)
+        h[:negative] = string_to_i($1)
+        h[:positive] = string_to_i($2)
+        @s =~ /\n([0-9]+)People Tested\n/
+        h[:tested] = string_to_i($1)
+        @s =~ /\n([0-9]+)Deaths Statewide\n/
+        h[:deaths] = string_to_i($1)
+        return h
+      end
+      byebug if @s.size > 1000 && !AUTO_FLAG
+      nil
+    end    
     h
   end
 
@@ -1024,13 +1036,13 @@ end
       byebug unless AUTO_FLAG
       return h
     end
-    if s =~ /Negative\sPositive\s([0-9]+)\s([0-9]+)/
+    if s =~ /Negative\sPositive\sDeaths\s([0-9]+)\s([0-9]+)\s([0-9]+)/
       h[:negative] = string_to_i($1)
       h[:positive] = string_to_i($2)
+      h[:deaths] = string_to_i($3)
     else
-      @errors << 'missing pos neg'
+      @errors << 'missing pos neg deaths'
     end
-    h[:deaths] = 0
     h[:county_positive] = []
     cols = @driver.find_elements(class: 'ms-rteTable-default')[1].text.gsub(',','').gsub(/\s+/,' ').split
     if cols[2] == 'Deaths'
@@ -1047,7 +1059,8 @@ end
             h[:county_positive] << [county, string_to_i(w)]
             i = 2
           else 
-            h[:deaths] += string_to_i(w)
+            # county death
+            #h[:deaths] += string_to_i(w)
             i = 0
           end
         else
@@ -1061,7 +1074,7 @@ end
         end
       end
     else
-      @errors << "missing deaths"
+      @errors << "missing county deaths"
     end
     h
   end
@@ -1086,7 +1099,7 @@ end
     else
       @errors << 'missing pos'
     end
-    if (x = cols.select {|v,i| v=~/^Number of people who had negative test results at RIDOH/}.first)
+    if (x = cols.select {|v,i| v=~/^Number of people who had negative test results/}.first)
       h[:negative] = string_to_i(x.strip.split.last)
     else
       @errors << 'missing neg'
@@ -1096,7 +1109,6 @@ end
     else
       @errors << 'missing pending'
     end
-    h[:tested] = h[:positive].to_i + h[:negative].to_i + h[:pending].to_i
     h
   end
 
@@ -1126,9 +1138,7 @@ end
     else
       @errors << "missing positive"
     end
-    h[:pending] = 0
-    h[:tested] = h[:positive].to_i + h[:negative].to_i
-    if @s =~ /"([^"]+)arcgis\.com([^"]+)"/
+    if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
       @driver.navigate.to($1 + 'arcgis.com' + $2)
       sec = SEC
       loop do
@@ -1243,8 +1253,16 @@ end
       h[:skip] = true
       return h
     end
-    puts "tableu for va TODO"
     @driver.navigate.to @url
+    if @driver.page_source =~ /<iframe src=\"https:\/\/public\.tableau\.com([^"]+)"/
+      @url = 'https://public.tableau.com' + $1
+    else
+      @errors << 'missing tableau url'
+      return h
+    end 
+    @driver.navigate.to @url
+    puts 'need to manually get numbers from tableau'
+    byebug
     h[:tested] = 1278
     h[:positive] = 77
     h[:negative]
@@ -1661,7 +1679,13 @@ end
         end
 
         unless h[:deaths]
-          if search_term('death')
+          x = nil
+          begin
+            x = search_term('death')
+          rescue => e
+            puts "search_term failed: #{e.inspect}"
+          end
+          if x
             puts h.inspect
             byebug unless AUTO_FLAG
             puts
