@@ -3,4 +3,4 @@
 require './crawler'
 
 crawler = Crawler.new
-errors = crawler.run
+errors = crawler.run(ARGV)

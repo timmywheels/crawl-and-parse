@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require './crawler'
+
+#
+# usage: ./bin/crawl [optional list of states]
+#
+
+crawler = Crawler.new
+errors = crawler.run(ARGV, false)
