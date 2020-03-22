@@ -6,5 +6,9 @@ crawler = Crawler.new
 crawler.run(["az", "nd", "va"], false)
 
 errors = crawler.run
+
+puts
+puts 'done with full run'
+puts
 byebug
 errors = crawler.run(errors) 

@@ -3,6 +3,9 @@ require 'nokogiri'
 require "selenium-webdriver"
 
 # TODO
+
+# sd and ms are broken for possitive
+
 # not automatic:
 # ["az", "nd", "va"] 
 # pdf for more data: ma, ny
@@ -143,6 +146,11 @@ class Crawler
     @driver.find_elements(class: "tabCanvas")[0].click
     @driver.find_elements(class: "download")[0].click
     x = @driver.find_elements(class: "tab-downloadDialog")[0]
+
+#x.find_elements(:css, "*")[4].click
+#byebug
+#@driver.find_elements(class: "tab-pdf-dialog-buttons")[0].click
+
     x.find_elements(:css, "*")[3].click
     @driver.find_elements(class: "tabDownloadFileButton")[0].click
     byebug # manually save, required to set browser preferences
@@ -774,7 +782,8 @@ class Crawler
   def parse_ms(h)
     @driver.navigate.to @url
 # TODO get counties
-    if (s=@driver.find_elements(class: 'rightColumn').map {|i| i.text}.select {|i| i=~/All Mississippi cases to date/}.first) && s.gsub(',','')=~/Total ([0-9]+) ([0-9]+)/
+    if (s=@driver.find_elements(id: 'msdhTotalCovid-19Cases')[0]) && 
+      (s.text.gsub(',','') =~ /\nTotal\s([0-9]+)\s([0-9]+)/)
       h[:positive] = string_to_i($1)
       h[:deaths] = string_to_i($2)
     else
@@ -816,7 +825,8 @@ class Crawler
     sec = SEC/3
     loop do
       @s = @driver.find_elements(class: 'layout-reference')[0].text
-      if @s =~ /Total Cases\n([^\n]+)\nLast update/
+# County is available
+      if @s =~ /Total Cases\n([^\n]+)\n/
         h[:positive] = string_to_i($1)
         break
       elsif sec == 0
@@ -883,9 +893,9 @@ class Crawler
       return h
     end
     puts "image file for ND"
-    h[:tested] = 1182
+    h[:tested] = 1288
     h[:positive] = 28
-    h[:negative] = 1154
+    h[:negative] = 1260
     h[:pending] = 0
     h[:deaths] = 0 # TODO
     @driver.navigate.to @url
@@ -1048,7 +1058,7 @@ class Crawler
   def parse_ny(h)
     @driver.navigate.to @url
     puts "death manual"
-    h[:deaths] = 43 # from nyc report TODO
+    h[:deaths] = 60 # from nyc report TODO
     byebug unless @auto_flag
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[-2] == "Total Number of Positive Cases"
@@ -1333,21 +1343,21 @@ class Crawler
   end
 
   def parse_sd(h)
-    rows = @doc.css('table').map {|i| i.text.gsub(',','').gsub(/\s+/,' ')}
-    if (x=rows.select {|i| i=~/Positive\*? ([0-9]+) Negative ([0-9]+) Pending ([0-9]+) /}.first) &&
-      x =~ /Positive\*? ([0-9]+) Negative ([0-9]+) Pending ([0-9]+) /
+    tables = @doc.css('table').map {|i| i.text.gsub(',','').gsub(/\s+/,' ').gsub('*','')}
+    if (t = tables.select {|i| i=~/SOUTH DAKOTA CASE COUNTS/}[0]) &&
+      t =~ /Positive ([0-9]+) Negative ([0-9]+) Pending ([0-9]+)/
       h[:positive] = string_to_i($1)
       h[:negative] = string_to_i($2)
       h[:pending] = string_to_i($3)
-      h[:tested] = h[:pending] + h[:positive] + h[:negative]
     else
-      @errors << "missing tests"
+      @errors << "missing pos neg pending"
     end
-    if (x=rows.select {|i| i=~/Deaths ([0-9]+) /}.first) &&
-      x =~ /Deaths ([0-9]+) /
-      h[:deaths] = string_to_i($1)
+    if (t = tables.select {|i| i=~/COVID-19 IN SOUTH DAKOTA/}[0]) &&
+      t =~ /Cases ([0-9]+) Deaths ([0-9]+) Recovered ([0-9]+)/
+      h[:deaths] = string_to_i($2)
+      h[:recovered] = string_to_i($3)
     else
-      @errors << "missing tests"
+      @errors << "missing deaths"
     end
     h
   end  
@@ -1430,11 +1440,12 @@ class Crawler
     end 
     @driver.navigate.to @url
     puts 'need to manually get numbers from tableau'
-    h[:tested] = 2790
-    h[:positive] = 152
+    h[:tested] = 3337
+    h[:positive] = 219
+    h[:hospitalized] = 32
     h[:negative]
     h[:pending]
-    h[:deaths] = 2 # TODO
+    h[:deaths] = 3 # TODO
     byebug
     h
   end
@@ -1676,7 +1687,16 @@ class Crawler
   end
 
   def initialize
-    @driver = Selenium::WebDriver.for :firefox
+
+profile = Selenium::WebDriver::Firefox::Profile.new
+#profile.add_extension("/path/to/extension.xpi")
+profile['browser.download.dir'] = '/Users/danny/Downloads'
+#profile['browser.download.folderList'] = 2
+profile['browser.helperApps.neverAsk.saveToDisk'] = "application/pdf, application/csv"
+profile['pdfjs.disabled'] = true
+options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
+
+    @driver = Selenium::WebDriver.for :firefox, options: options
     @path = 'data/'
     # load previous numbers
     lines = open('all.csv').readlines.map {|i| i.split("\t")}
