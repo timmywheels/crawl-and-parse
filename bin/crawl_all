@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+require './crawler'
+
+crawler = Crawler.new
+crawler.run(["az", "nd", "va"], false)
+
+errors = crawler.run
+byebug
+errors = crawler.run(errors) 

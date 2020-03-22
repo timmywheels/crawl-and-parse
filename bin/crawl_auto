@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require './crawler'
+
+crawler = Crawler.new
+errors = crawler.run

@@ -2,30 +2,14 @@ require 'byebug'
 require 'nokogiri'
 require "selenium-webdriver"
 
-AUTO_FLAG = false # breakpoints to check work
-AUTO_FLAG = true # automatic run
-
-DEBUG_ST = nil # if set, run for a single state
-OFFSET = nil # if set, start running at that state
-SKIP_LIST = [] # skip these states
-CRAWL_LIST = [] # only crawl these states
-#CRAWL_LIST = ["az", "nd", "va"]
-
-DEBUG_PAGE_FLAG = true # review each webpage manually to check crawl
+# TODO
+# not automatic:
+# ["az", "nd", "va"] 
+# pdf for more data: ma, ny
 
 SEC = 30 # seconds to wait for page to load
-
-# TODO things to fix or are broken
-
-# MI deaths missing
-# OH deaths missing
-
-# NV
-
-# IA! new page, is an image :(
-# ma need to parse pdf
-# nd challenging js
-# va js not parsed
+OFFSET = nil # if set, start running at that state
+SKIP_LIST = [] # skip these states
 
 =begin
 
@@ -72,7 +56,7 @@ class Crawler
       @errors << 'missing positive'
     end
     puts 'AK: tested data in image?'
-    byebug unless AUTO_FLAG
+    byebug unless @auto_flag
     h[:tested] # TODO
     # Cumulative number of cases hospitalized to date:  0​
     # positive by region available
@@ -147,7 +131,7 @@ class Crawler
   def parse_az(h)
     #@driver.navigate.to(@url) rescue nil
     #byebug
-    if AUTO_FLAG
+    if @auto_flag
       puts "skipping AZ"
       h[:skip] = true
       return h
@@ -416,7 +400,7 @@ class Crawler
     if @driver.page_source =~ /<iframe src=\"https:\/\/iowa\.maps\.arcgis\.com([^"]+)"/
       @url = 'https://iowa.maps.arcgis.com' + $1
     else # might be captcha
-      if AUTO_FLAG
+      if @auto_flag
         @errors << 'missing dash url, possible captcha'
         return h
       end
@@ -560,7 +544,7 @@ class Crawler
   def parse_ky(h)
     @driver.navigate.to @url
     puts "death manual"
-    byebug unless AUTO_FLAG
+    byebug unless @auto_flag
     cols = @driver.find_elements(class: 'alert-success')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size >0}
     if (x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Number Tested:/}.first) && x[0] =~ /^Number Tested: ([0-9]+)/
       h[:tested] = string_to_i($1)
@@ -628,7 +612,7 @@ class Crawler
     end
     puts "pdf? manual entry of tested from pdf"
     h[:tested] = 2666 + 940 + 485
-    byebug unless AUTO_FLAG
+    byebug unless @auto_flag
     # no death data
     h
   end # parse_ma
@@ -865,7 +849,7 @@ class Crawler
     loop do
       begin
         cols = @driver.find_elements(class: 'content').map {|i| i.text}.select {|i| i=~/NC Cases/i}.last.split("\n").map{|i| i.strip}.select{|i| i.size>0}
-        byebug if cols.size != 13 && !AUTO_FLAG
+        byebug if cols.size != 13 && !@auto_flag
         break
       rescue => e
         sleep 1
@@ -893,7 +877,7 @@ class Crawler
   end
 
   def parse_nd(h)
-    if AUTO_FLAG
+    if @auto_flag
       puts 'skipping ND'
       h[:skip] = true
       return h
@@ -1055,7 +1039,7 @@ class Crawler
         h[:deaths] = string_to_i($1)
         return h
       end
-      byebug if @s.size > 1000 && !AUTO_FLAG
+      byebug if @s.size > 1000 && !@auto_flag
       nil
     end    
     h
@@ -1065,7 +1049,7 @@ class Crawler
     @driver.navigate.to @url
     puts "death manual"
     h[:deaths] = 43 # from nyc report TODO
-    byebug unless AUTO_FLAG
+    byebug unless @auto_flag
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if rows[-2] == "Total Number of Positive Cases"
       h[:positive] = rows[-1].to_i
@@ -1210,7 +1194,7 @@ class Crawler
       s = s.text.gsub(',','')
     else
       @errors << 'parse failed'
-      byebug unless AUTO_FLAG
+      byebug unless @auto_flag
       return h
     end
     if s =~ /Negative\sPositive\sDeaths\s([0-9]+)\s([0-9]+)\s([0-9]+)/
@@ -1373,7 +1357,7 @@ class Crawler
     #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if cols.size != 15
-      byebug unless AUTO_FLAG
+      byebug unless @auto_flag
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total positives in TN/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -1432,7 +1416,7 @@ class Crawler
   end # parse_ut
 
   def parse_va(h)
-    if AUTO_FLAG
+    if @auto_flag
       puts "skipping VA"
       h[:skip] = true
       return h
@@ -1646,7 +1630,7 @@ class Crawler
     elsif s =~ /~(.*)/
       s = $1
     elsif s =~ /App/
-      byebug unless AUTO_FLAG
+      byebug unless @auto_flag
       ''
     end
     case s.strip
@@ -1684,7 +1668,7 @@ class Crawler
         else
           puts "Please fix. Invalid number string: #{s}"
           temp = nil
-          byebug unless AUTO_FLAG
+          byebug unless @auto_flag
           return temp
         end
       end
@@ -1709,7 +1693,7 @@ class Crawler
 
   def method_missing(m, h)
     puts "method_missing called on state: #{@st}"
-    if AUTO_FLAG
+    if @auto_flag
       h[:skip] = true
       return h
     end
@@ -1719,7 +1703,13 @@ class Crawler
   end
 
   # main execution loop
-  def run
+  # 
+  # default is to run all states in automatic mode
+  # or you can specifiy the list of states to run
+  # if auto_flag is false, will prompt you for certain states
+  #
+  def run(crawl_list = [], auto_flag = true, debug_page_flag = false)
+    @auto_flag = auto_flag
     h_all = []
     errors_crawl = []
     warnings_crawl = []
@@ -1737,15 +1727,14 @@ class Crawler
     filetime = filetime.gsub(':', '.')
 
     for @st, @url in (open('states.csv').readlines.map {|i| i.strip.split("\t")}.map {|st, url| [st.downcase, url]})
-      if CRAWL_LIST.size > 0
-        next unless CRAWL_LIST.include?(@st)
+      if crawl_list.size > 0
+        next unless crawl_list.include?(@st)
       end
       puts "CRAWLING: #{@st}"
 
       skip_flag = false if @st == OFFSET
       next if skip_flag
       next if SKIP_LIST.include?(@st)
-      next unless @st == DEBUG_ST if DEBUG_ST
       # `mkdir -p #{@path}#{@st}`
       unless Dir.exist?("#{@path}#{@st}")
         unless Dir.exist?("#{@path}")
@@ -1794,7 +1783,7 @@ class Crawler
           puts "only deaths changed for #{@st}"
           puts "old h: #{@h_prev[@st]}"
           puts "new h: #{h}"
-          unless AUTO_FLAG
+          unless @auto_flag
             @driver.navigate.to(@url) rescue nil
             byebug
             puts
@@ -1804,7 +1793,7 @@ class Crawler
             puts "tested different, positives same for #{@st}"
             puts "old h: #{@h_prev[@st]}"
             puts "new h: #{h}"
-            unless AUTO_FLAG
+            unless @auto_flag
               @driver.navigate.to(@url) rescue nil
               byebug
               puts
@@ -1816,7 +1805,7 @@ class Crawler
           puts "missing positive for #{@st}"
           puts "old h: #{@h_prev[@st]}"
           puts "new h: #{h}"
-          unless AUTO_FLAG
+          unless @auto_flag
             @driver.navigate.to(@url) rescue nil
             byebug
             puts
@@ -1825,7 +1814,7 @@ class Crawler
           puts "positive decreased for #{@st}"
           puts "old h: #{@h_prev[@st]}"
           puts "new h: #{h}"
-          unless AUTO_FLAG
+          unless @auto_flag
             @driver.navigate.to(@url) rescue nil
             byebug
             puts 
@@ -1834,7 +1823,7 @@ class Crawler
           puts "please double check stats, for #{@st}:"
           puts "old h: #{@h_prev[@st]}"
           puts "new h: #{h}"
-          unless AUTO_FLAG
+          unless @auto_flag
             @driver.navigate.to(@url) rescue nil
             byebug
             puts
@@ -1859,12 +1848,12 @@ class Crawler
           puts
           puts "ERROR in #{@st}: #{@errors.inspect}"
           puts "new h: #{h}"
-          unless AUTO_FLAG
+          unless @auto_flag
             @driver.navigate.to @url
             byebug
             puts
           end
-        elsif DEBUG_PAGE_FLAG && !AUTO_FLAG 
+        elsif debug_page_flag && !@auto_flag 
           puts
           puts "DEBUG PAGE FLAG"
           puts @st
@@ -1885,7 +1874,7 @@ class Crawler
           end
           if x
             puts h.inspect
-            byebug unless AUTO_FLAG
+            byebug unless @auto_flag
             puts
           end
         end
@@ -1913,20 +1902,18 @@ class Crawler
     puts "tested:"
     puts tested.inspect
     puts
-    puts "errors:"
+    puts "#{errors_crawl.size} errors:"
     puts errors_crawl.inspect
     puts
-    puts "warnings:"
+    puts "#{warnings_crawl.size} warnings:"
     puts warnings_crawl.inspect
     puts
-    puts "skipped:"
+    puts "#{skipped_crawl.size} skipped:"
     puts skipped_crawl.inspect
     puts
     
-    byebug unless AUTO_FLAG
     puts "done."
+    errors_crawl.map {|i| i.keys.first}
   end # end run
 
-end # end Crawler class
-
-Crawler.new.run
+end # Crawler class
