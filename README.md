@@ -1,13 +1,12 @@
 # covid-19-crawler
 
-The main script, crawler.rb, crawls the webpages for each of the 50 states
-and DC for their published COVID-19 statistics.
+The main code is in crawler.rb. The crawler and parsers are there for the 50
+US states and DC. The focus is to collect offical published COVID-19 statistics.
+In the bin/ folder are useful commands to run the crawl and parse or all states
+or specific ones.
 
-This was a weekend hack, so pardon the messy code. The object was to get
-something working and pulling data from the state websites as soon as possible.
-
-Help to improve the crawlers would be much appreciated. A few sites have images
-that require manual review, and a few js page crawls are unfinished.
+Only the main fields are being captured, so more work is needed to capture additional
+fields. Also county data is a big todo item.
 
 The crawled data is being hosted on http://coronavirusapi.com/
 That project could also use help!
