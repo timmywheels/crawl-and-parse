@@ -203,6 +203,12 @@ class Crawler
     else
       @errors << "missing deaths"
     end
+    if i = rows.select {|i| i[0] =~ /^Private Laboratory/}.first
+      h[:tested] = 0 unless h[:tested]
+      h[:tested] += string_to_i(i[1])
+    else
+      @errors << "missing private library tests"
+    end
     `mv /Users/danny/Downloads/Testing_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Testing_crosstab.csv`
     `mv /Users/danny/Downloads/Cases_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Cases_crosstab.csv`
     h
@@ -387,13 +393,19 @@ class Crawler
   end
 
   def parse_hi(h)
-    # TODO table in image?
     #@driver.navigate.to @url
     #byebug
-    if @s =~ /There have been ([^s]+) cases of COVID-19 identified in Hawaii/
+    @s = @doc.css('table')[0].text.gsub(',','')
+    if @s =~ /\nTotal \(new\)\n([0-9]+)/
       h[:positive] = string_to_i($1)
     else
-      @errors << "HI page changed"
+      @errors << 'missing positive'
+    end
+    @s = @doc.css('table')[0].text.gsub(',','')
+    if @s =~ /\nDeaths\n([0-9]+)/
+      h[:deaths] = string_to_i($1)
+    else
+      @errors << 'missing deaths'
     end
     # county cases
     h
