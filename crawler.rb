@@ -225,14 +225,22 @@ class Crawler
     end
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
     #h[:negative] = 690 # TODO hard coded
+    urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i}.sort.reverse
+    @driver.navigate.to urls.shift
+    if (x=@driver.find_element(id: 'MainContent')) && x.text =~ /pproximately ([0-9,]+) tests had been conducted in California/
+      h[:tested] = string_to_i($1)
+    else
+      @errors << 'missing tested'
+    end
     h
   end
 
   def parse_co(h)
-    #@driver.navigate.to @url
+    @driver.navigate.to @url
     #byebug
-    s = @doc.css('body').text.gsub(',','')
-    if s =~ /\n([0-9]+)[^0-9]?cases\n([0-9]+)[^0-9]?hospitalized\n([0-9]+)[^0-9]?counties\n([0-9]+)[^0-9]?people tested\n([0-9]+)[^0-9]?deaths\n/
+    @s = @driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Colorado Case Summary/}[0]
+    if @s && @s.gsub!(',','') &&
+      @s =~ /\n([0-9]+)[^0-9]?cases\n([0-9]+)[^0-9]?hospitalized\n([0-9]+)[^0-9]?counties\n([0-9]+)[^0-9]?people tested\n([0-9]+)[^0-9]?deaths\n/
       h[:positive] = string_to_i($1)
       h[:hospitalized] = string_to_i($2)
       h[:tested] = string_to_i($4)
@@ -247,6 +255,15 @@ class Crawler
   def parse_ct(h)
     #@driver.navigate.to @url
     # byebug
+    puts "in pdf!"
+
+    h[:tested] = 3600
+    h[:positive] = 327
+    h[:hospitalized] = 51
+    h[:negative]
+    h[:pending]
+    h[:deaths] = 8 # TODO
+
     cols = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if cols[3] == "Positive Cases" && cols[-2] == 'Total'
       h[:positive] = string_to_i(cols[-1])
@@ -893,9 +910,10 @@ class Crawler
       return h
     end
     puts "image file for ND"
-    h[:tested] = 1288
-    h[:positive] = 28
-    h[:negative] = 1260
+    h[:tested] = 1355
+    h[:positive] = 30
+    h[:negative] = 1325
+    h[:hospitalized] = 4
     h[:pending] = 0
     h[:deaths] = 0 # TODO
     @driver.navigate.to @url
@@ -1176,7 +1194,7 @@ class Crawler
     if (x = cols.select {|v,i| v=~/^Pending ([0-9]+)/}.first) && x=~/^Pending ([0-9]+)/
       h[:pending] = string_to_i($1)
     else
-      @errors << 'missing pending'
+      @warnings << 'missing pending'
     end
     if (x = cols.select {|v,i| v=~/^Total /}.first) 
       h[:tested] = string_to_i(x.split.last)
@@ -1306,16 +1324,18 @@ class Crawler
         sleep(1)
       end
     end
-    if rows.select {|i| i=~/Negative tests /}[0].gsub(',','') =~ /Negative tests \(Public Health Laboratory only\) ([0-9]+)/
+    if (x=rows.select {|i| i=~/Negative tests /}[0]) && x.gsub(',','') =~ /Negative tests \(Public Health Laboratory only\) ([0-9]+)/
       h[:negative] = string_to_i($1)
     else
       @errors << "missing negative"
     end
-    if rows.select {|i| i=~/Positive tests/}[0].gsub(',','') =~ /Positive tests ([0-9]+)/
+=begin
+    if (x=rows.select {|i| i=~/Positive tests/}[0]) && x.gsub(',','') =~ /Positive tests ([0-9]+)/
       h[:positive] = string_to_i($1)
     else
       @errors << "missing positive"
     end
+=end
     if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
       @driver.navigate.to($1 + 'arcgis.com' + $2)
       sec = SEC
@@ -1327,6 +1347,11 @@ class Crawler
             h[:deaths] = string_to_i($1)
           else
             @errors << 'missing deaths inner'
+          end
+          if @s =~ /\nTotal Positive Cases\n([^\n]+)/
+            h[:positive] = string_to_i($1)
+          else
+            @errors << 'missing positive inner'
           end
 # TODO get counties
           break
@@ -1634,6 +1659,10 @@ class Crawler
 
   # convert a string to an int
   def string_to_i(s)
+    if !s
+      byebug unless @auto_flag
+      nil
+    end
     return s if s.class == Integer
     return 0 if s == "--"
     if s =~ /Appx\. (.*)/

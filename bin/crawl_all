@@ -10,5 +10,9 @@ errors = crawler.run
 puts
 puts 'done with full run'
 puts
-byebug
-errors = crawler.run(errors) 
+
+while errors.size > 0
+  puts "ready to run errors again:"
+  byebug
+  errors = crawler.run(errors) 
+end
