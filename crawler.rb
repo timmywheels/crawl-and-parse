@@ -1506,7 +1506,7 @@ return h
     #@driver.navigate.to @url
     #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
-    if cols.size != 15
+    if cols.size != 16
       byebug unless @auto_flag
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total positives in TN/}.first
@@ -1524,7 +1524,12 @@ return h
     else
       @errors << 'missing tested 2'
     end
-    # TODO no death data
+    cols = @doc.css('table')[1].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Fatalities/}.first
+      h[:deaths] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing tested 2'
+    end
     h
   end
 
