@@ -7,7 +7,7 @@ require "selenium-webdriver"
 # pdf for more data: ct, ma, ny
 # image: ak
 
-# page missing data: de, ia, ks, ky, md, me, mi, mo, mt, ne, nh, nm, oh, ri
+# page missing data: de, ia, ks, ky, md, me, mi, mo, mt, ne, nm, oh, ri
 
 SEC = 60 # seconds to wait for page to load
 OFFSET = nil # if set, start running at that state
@@ -60,7 +60,7 @@ class Crawler
 
     puts 'AK: tested data in image?'
     byebug unless @auto_flag
-    h[:tested] = 878+144 # from image!
+    h[:tested] = 994+697 # from image!
     # Cumulative number of cases hospitalized to date:  0
     # positive by region available
     # no death data
@@ -407,12 +407,16 @@ return h
         @driver.navigate.to(url)
         sec = SEC
         loop do
-          @driver.find_elements(class: 'tab-title')[1].click
-          s = @driver.find_elements(class: 'dashboard-page')[0].text
-          if s =~ /\nTotal Tests\n([^\n]+)\n/
-            h[:tested] = string_to_i($1)
-            break
-          elsif s == 0
+          begin
+            @driver.find_elements(class: 'tab-title')[1].click
+            s = @driver.find_elements(class: 'dashboard-page')[0].text
+            if s =~ /\nTotal Tests\n([^\n]+)\n/
+              h[:tested] = string_to_i($1)
+              break
+            end
+          rescue
+          end
+          if s == 0
             @errors << 'missing tested'
             break
           end
@@ -679,7 +683,11 @@ return h
       sec -= 1
       puts 'sleeping' 
       sleep 1
-      @s = @driver.find_elements(class: 'layout-reference')[0].text
+      begin
+        @s = @driver.find_elements(class: 'layout-reference')[0].text
+      rescue
+        @s = ''
+      end
       if @s =~ /\nData updated:([^\n]+)\n/
         h[:date] = $1.strip
       end
@@ -806,7 +814,6 @@ return h
       return h
     end
     cols = @driver.find_elements(class: 'fullContent')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
-
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total$/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
       if cols.include?('County Cases Deaths')
@@ -1039,20 +1046,35 @@ return h
     else
       @errors << 'missing positive'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons with Test Pending/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Deaths Attributed to COVID/i}.first
+      h[:deaths] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing deaths'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Hospitalizations/i}.first
+      h[:hospitalized] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing hospitalized'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons with Test Pending /i}.first
       h[:pending] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing pending'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Number of Persons Tested at NH/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons with Specimens Submitted/i}.first
       h[:tested] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing tested'
     end
-    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons Being Monitored/}.first
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons Being Monitored/i}.first
       h[:monitored] = string_to_i(cols[x[1]+1])
     else
       @errors << 'missing monitored'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Persons Tested Negative/i}.first
+      h[:negative] = string_to_i(cols[x[1]+1])
+    else
+      @errors << 'missing negative'
     end
     # TODO no death data
     h
@@ -1133,7 +1155,7 @@ return h
     end
     @driver.navigate.to(@url)
     @s = ''
-    sec = SEC * 2
+    sec = SEC * 3
     loop do
       puts 'sleeping'
       sleep 1
@@ -1517,7 +1539,7 @@ return h
     loop do
       @s = @driver.find_elements(class: 'dashboard-page')[0].text
       flag = true
-      if x = @s.scan(/Total Tests ([^\n]+)\n/).first
+      if x = @s.scan(/([^\n]+)\nTotal tests/i).first
         h[:tested] = string_to_i(x[0])
       else
         flag = false
