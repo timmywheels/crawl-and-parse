@@ -80,42 +80,25 @@ class Crawler
 
   def parse_al(h)
     crawl_page
-    cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
-    if cols[3] != 'Deaths'
-      byebug unless (cols.size - 0) % 2 == 0
-      byebug unless cols[2..3] == ["County of Residence", "Cases"]
-      rows = (cols.size - 2)/2 - 2 # last should be Total
-      h[:positive] = 0
-      rows.times do |r|
-    	  h[:positive] += string_to_i(cols[(r+2)*2+1])
+    url = @s.scan( /[^'"]+alpublichealth.maps.arcgis.com[^'"]+/ )[0]
+    raise unless url
+    crawl_page url
+    sec = SEC
+    loop do
+      t = @driver.find_elements(class: 'dashboard-page')[0]
+      if t && (@s=t.text.gsub(',','')) =~ /CONFIRMED\n([\d]+)\nTOTAL TESTED\*?\n([\d]+)\nDIED FROM\nTHIS ILLNESS\n([\d]+)/
+        h[:tested] = string_to_i($2)
+    	h[:deaths] = string_to_i($3)
+        h[:positive] = string_to_i($1)
+        break
       end
-      byebug unless cols[(rows+1)*2+2] == 'Total'
-      byebug unless h[:positive] == string_to_i(cols[(rows+1)*2+3])
-      if @s.gsub(',','') =~ />Deaths:([^<]+)</
-    	  h[:deaths] = string_to_i($1)
-      else
-    	  @errors << 'missing deaths'
+      sec -= 1
+      if sec == 0
+        @errors << 'parse failed'
+        break
       end
-    else
-      byebug unless (cols.size - 1) % 3 == 0
-      byebug unless cols[1..3] == ["County of Residence", "Cases", "Deaths"]
-      rows = (cols.size - 1)/3 - 1
-      h[:positive] = 0
-      h[:deaths] = 0
-      rows.times do |r|
-        h[:positive] += string_to_i(cols[(r+1)*3+2])
-        h[:deaths] += string_to_i(cols[(r+2)*3])
-      end
-    end
-    if @s.gsub(',','') =~ /Total Tested:([^<]+)/
-      h[:tested] = string_to_i($1)
-    else
-      @errors << 'missing tested'
-    end
-    if @s.gsub(',','') =~ /Deaths:([^<]+)/
-      h[:deaths] = string_to_i($1)
-    else
-      @errors << 'missing deaths'
+      puts 'sleeping'
+      sleep 1
     end
     # counties available
     h
@@ -880,8 +863,8 @@ h[:pending]
     else
       @errors << 'missing tested2'
     end
-    if (x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive: /}.first) &&
-      x[0] =~ /^Positive: ([0-9]+)/
+    if (x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Total Positive: /i}.first) &&
+      x[0] =~ /Total Positive: ([0-9]+)/i
       h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
@@ -994,7 +977,7 @@ h[:pending]
     cols = []
     loop do
       begin
-        cols = @driver.find_elements(class: 'content').map {|i| i.text}.select {|i| i=~/NC Cases/i}.last.split("\n").map{|i| i.strip}.select{|i| i.size>0}
+        cols = @driver.find_elements(class: 'content').map {|i| i.text}.select {|i| i=~/NC Completed Tests/i}.last.split("\n").map{|i| i.strip}.select{|i| i.size>0}
         byebug if cols.size != 10 && !@auto_flag
         break
       rescue => e
