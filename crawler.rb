@@ -51,9 +51,9 @@ class Crawler
   # parse_XXX methods for the 50 US states and DC
 
   def parse_ak(h)
-    @driver.navigate.to @url
+    crawl_page
     cols = @doc.css('table').map {|i| i.text.gsub(',','')}.select {|i| i=~/Travel\-Related/}.first.split("\n").map {|i| i.strip}.select {|i| i.size>0}
-    if cols[-4] =~ /TOTAL$/ 
+    if cols[-6] == " TOTAL"
       h[:positive] = string_to_i(cols[-1])
     else
       @errors << 'missing positive'
@@ -65,7 +65,7 @@ class Crawler
     end
     puts 'AK: tested data in image?'
     byebug unless @auto_flag
-    h[:tested] = 994+697 # from image!
+    h[:tested] = 994+697 # from image! save image?
     # Cumulative number of cases hospitalized to date:  0
     # positive by region available
     # no death data
@@ -74,7 +74,7 @@ class Crawler
   end
 
   def parse_al(h)
-     #@driver.navigate.to @url
+    crawl_page
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if cols[3] != 'Deaths'
       byebug unless (cols.size - 0) % 2 == 0
@@ -117,13 +117,13 @@ class Crawler
   end
 
   def parse_ar(h)
-    @driver.navigate.to(@url)
+    crawl_page
     @url = @driver.page_source.scan(/http[^'"]+maps\.arcgis\.com[^'"]+/)[0]
     unless @url
       @errors << 'url missing'
       return h
     end
-    @driver.navigate.to(@url)
+    crawl_page
     sec = SEC
     loop do
       flag = false
@@ -170,7 +170,7 @@ class Crawler
       return h
     end
 =end
-    @driver.navigate.to(@url) 
+    crawl_page
     if @auto_flag
       puts "skipping AZ"
       h[:skip] = true
@@ -178,7 +178,6 @@ class Crawler
     end
     `rm /Users/danny/Downloads/Cases_crosstab.csv`
     `rm /Users/danny/Downloads/Testing_crosstab.csv`
-    @driver.navigate.to @url
     sleep(3)
     @driver.find_elements(class: "tabCanvas")[0].click
     @driver.find_elements(class: "download")[0].click
@@ -241,10 +240,10 @@ class Crawler
     `mv /Users/danny/Downloads/Testing_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Testing_crosstab.csv`
     `mv /Users/danny/Downloads/Cases_crosstab.csv #{@path}az/#{Time.now.to_s[0..18].gsub(' ','_')}_Cases_crosstab.csv`
     h
-  end # parse_az
+  end
 
   def parse_ca(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/5
     loop do
       @s = @driver.find_elements(id: 's4-workspace').first.text.gsub(/\s+/,' ')
@@ -262,7 +261,7 @@ class Crawler
     end
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
     urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i}.sort.reverse
-    @driver.navigate.to urls.shift
+    crawl_page urls.shift
     if (x=@driver.find_element(id: 'MainContent')) && x.text =~ /pproximately ([0-9,]+) tests had been conducted in California/
       h[:tested] = string_to_i($1)
     else
@@ -273,7 +272,7 @@ class Crawler
   end
 
   def parse_co(h)
-    @driver.navigate.to @url
+    crawl_page
     #byebug
     @s = @driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Colorado Case Summary/}[0]
     if @s && @s.gsub!(',','') &&
@@ -290,30 +289,28 @@ class Crawler
   end
 
   def parse_ct(h)
-    #@driver.navigate.to @url
-    # byebug
-    puts "in pdf!"
 h[:tested]=5898
 h[:positive]=875
 h[:deaths]=19
-#    h[:hospitalized] = 54
-    h[:negative]
-    h[:pending]
-
-    byebug unless @auto_flag
-return h
-    cols = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
-    if cols[3] == "Positive Cases" && cols[-2] == 'Total'
-      h[:positive] = string_to_i(cols[-1])
+#h[:hospitalized] = 54
+h[:negative]
+h[:pending]
+    crawl_page
+    if @s =~ /([^'"]+CTDPHCOVID19summary[^'"]+)/
+      url = 'https://portal.ct.gov' + $1
+      `curl #{url} -o #{@path}#{@st}/#{@filetime}_1.pdf`
+      `open #{@path}#{@st}/#{@filetime}_1.pdf`
+      puts 'manual entry from pdf' # TODO automate
+      byebug unless @auto_flag
     else
-      @errors << 'missing positive'
+      @errors << 'missing pdf'
     end
     h
   end
 
   def parse_dc(h)
     # TODO count calc may be off
-    @driver.navigate.to @url
+    crawl_page
     @s = @driver.find_elements(id: 'page').first.text.gsub(',','').gsub(/\s+/,' ')
     if (x = @s.scan(/Number of PHL positives:\s?([0-9]+)[^0-9]/)).size > 0
       h[:positive] = x.map {|i| string_to_i(i.first)}.max
@@ -345,10 +342,10 @@ return h
   end
 
   def parse_de(h)
-    #@driver.navigate.to @url
+    crawl_page
     @s = @s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
     if @s =~ /https:\/\/dshs.maps.arcgis.com([^"]+)"/
-      @driver.navigate.to('https://dshs.maps.arcgis.com' + $1)
+      crawl_page('https://dshs.maps.arcgis.com' + $1)
     else
       @errors << 'dashboard url not found'
       return h
@@ -376,7 +373,7 @@ return h
   end
 
   def parse_fl(h)
-    @driver.navigate.to @url
+    crawl_page
     cols = @driver.find_elements(class: "situation__boxes-wrapper")[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Total Cases Overview/}.first
       h[:positive] = string_to_i(cols[x[1]-1])
@@ -391,7 +388,7 @@ return h
     end
     if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
       url = $1 + 'arcgis.com' + $2
-      @driver.navigate.to url
+      crawl_page url
       sec = SEC
       url = nil
       loop do
@@ -409,7 +406,7 @@ return h
         end
       end
       if url
-        @driver.navigate.to(url)
+        crawl_page url
         sec = SEC
         loop do
           begin
@@ -434,10 +431,10 @@ return h
       @errors << 'dashboard not found'
     end
     h
-  end # parse_fl
+  end
 
   def parse_ga(h)
-    @driver.navigate.to @url
+    crawl_page
     cols = @driver.find_elements(class:'stacked-row-plus').map {|i| i.text.gsub(',','')}.select {|i| i=~/Confirmed cases and deaths in Georgia/}[0].split("\n")
     if (x = cols.select {|v,i| v=~/^Total ([0-9]+) /}.first) && x=~/^Total ([0-9]+) /
       h[:positive] = string_to_i($1)
@@ -461,7 +458,7 @@ return h
   end
 
   def parse_hi(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     @s = @doc.css('table')[0].text.gsub(',','')
     if @s =~ /\nTotal \(new\):\s([0-9]+)/
@@ -486,7 +483,7 @@ return h
   end
 
   def parse_ia(h)
-    @driver.navigate.to @url
+    crawl_page
     t = @driver.page_source.scan(/there have been ([^\s]+) negative COVID-19 test results reported/)
     if t.size > 0
       h[:negative] = string_to_i(t[0][0])
@@ -504,7 +501,7 @@ return h
       byebug
       nil
     end
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/2
     loop do
       sec -= 1
@@ -526,7 +523,7 @@ return h
   end
 
   def parse_id(h)
-    @driver.navigate.to @url
+    crawl_page
     @s = @driver.find_elements(class: 'wp-block-column')[0].text.gsub(',','').gsub(/\s+/,' ')
     if (x=(@s =~ /Public Health District County Cases Deaths/)) &&
        @s[x..-1] =~ / TOTAL\*? ([0-9]+) ([0-9]+) /
@@ -550,7 +547,7 @@ return h
   end
 
   def parse_il(h)
-    @driver.navigate.to @url
+    crawl_page
     cols = @driver.find_elements(class: "flex-container")[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -573,17 +570,17 @@ return h
       @errors << "missing date"
     end
     h
-  end # parse_il  
+  end
 
   def parse_in(h)
-    @driver.navigate.to @url
+    crawl_page
     if @s =~ /<iframe[^>]+src=\"https:\/\/arcg\.is([^"]+)/
       @url = 'https://arcg.is' + $1
     else
       @errors << 'missing url'
       return h
     end
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/2
     loop do
       sec -= 1
@@ -619,11 +616,11 @@ return h
 
   def parse_ks(h)
     puts 'pdf might have more data'
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     loop do
       if url = @driver.page_source.scan(/http[^'"]+arcg\.is[^'"]+/).first
-        @driver.navigate.to url
+        crawl_page url
         break
       end
       sec -= 1
@@ -658,7 +655,7 @@ return h
   end
 
   def parse_ky(h)
-    @driver.navigate.to @url
+    crawl_page
     puts "death manual"
     byebug unless @auto_flag
     cols = @driver.find_elements(class: 'alert-success')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size >0}
@@ -677,9 +674,9 @@ return h
   end
 
   def parse_la(h)
-    @driver.navigate.to @url
+    crawl_page
     if @driver.page_source =~ /src="https:\/\/www.arcgis.com([^"]+)/
-      @driver.navigate.to('https://www.arcgis.com' + $1)
+      crawl_page('https://www.arcgis.com' + $1)
     else
       @errors << 'link failed'
       return h
@@ -717,7 +714,7 @@ return h
 
   # TODO download pdf
   def parse_ma(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     loop do
       @s = @driver.find_elements(class: 'page-content')[0].text
@@ -735,14 +732,23 @@ return h
     puts "pdf? manual entry of tested from pdf"
     h[:tested] = 19794
     h[:deaths] = 15
-    byebug unless @auto_flag
+
+    if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as-of-march-25-2020[^'"]+)/
+      url = 'https://www.mass.gov' + $1
+      `curl #{url} -o #{@path}#{@st}/#{@filetime}_1.pdf`
+      `open #{@path}#{@st}/#{@filetime}_1.pdf`
+      puts 'manual entry from pdf' # TODO automate
+      byebug unless @auto_flag
+    else
+      @errors << 'missing pdf'
+    end 
     # TODO no death tested
     h
-  end # parse_ma
+  end
 
   def parse_md(h)
     # TODO county, age
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     while sec > 0 && !(@driver.find_elements(class: 'container').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}[0] =~ /COVID-19 Statistics in Maryland\nNumber of Confirmed Cases: ([^\n]+)\n/)
       puts 'sleeping...'
@@ -764,7 +770,7 @@ return h
   end
 
   def parse_me(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Confirmed Cases/}.first.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if cols.size == 8
@@ -810,7 +816,7 @@ return h
 
   def parse_mi(h)
     # TODO county, sex, age, hospitalization
-    @driver.navigate.to @url
+    crawl_page
     x = @driver.find_elements(class: 'btn').select {|i| i.text =~ /Cumulative Data/i}.first
     unless x
       @errors << 'button not found'
@@ -843,7 +849,7 @@ return h
   end
 
   def parse_mn(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     cols = []
     loop do
@@ -886,7 +892,7 @@ return h
 
   def parse_mo(h)
     # TODO click to get county
-    #@driver.navigate.to @url
+    crawl_page
     @s.gsub!(',','')
     if @s =~ /Cases in Missouri: ([0-9]+)/
       h[:positive] = string_to_i($1)
@@ -903,7 +909,7 @@ return h
   end
 
   def parse_ms(h)
-    @driver.navigate.to @url
+    crawl_page
 # TODO get counties
     if (s=@driver.find_elements(id: 'msdhTotalCovid-19Cases')[0]) && 
       (s.text.gsub(',','') =~ /\nTotal\s([0-9]+)\s([0-9]+)/)
@@ -923,14 +929,14 @@ return h
   end
 
   def parse_mt(h)
-    @driver.navigate.to @url
+    crawl_page
     if @s =~ /<a href="https:\/\/montana\.maps\.arcgis\.com([^"]+)"/
       @url = 'https://montana.maps.arcgis.com' + $1
     else
       @errors << 'map url not found'
       return h
     end
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     loop do
       if @driver.page_source =~ /src=\"https:\/\/montana\.maps\.arcgis\.com\/apps\/opsdashboard([^"]+)"/
@@ -944,7 +950,7 @@ return h
       puts 'sleeping'
       sleep 1
     end
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     loop do
       @s = @driver.find_elements(class: 'layout-reference')[0].text
@@ -977,7 +983,7 @@ return h
   end  
 
   def parse_nc(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     cols = []
     loop do
@@ -1011,6 +1017,7 @@ return h
   end
 
   def parse_nd(h)
+    crawl_page
     if @auto_flag
       puts 'skipping ND'
       h[:skip] = true
@@ -1023,12 +1030,12 @@ return h
     h[:hospitalized] = 8
     h[:pending] = 0
     h[:deaths] = 0 # TODO manual
-    @driver.navigate.to @url
     byebug 
     h
   end  
 
   def parse_ne(h)
+    crawl_page
     if @s =~ /<strong>.Updated&#58\; <\/strong>([^<]+)</
       h[:date] = $1
     else
@@ -1051,7 +1058,7 @@ return h
   end  
 
   def parse_nh(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     cols = @doc.css('table')[0].text.split("\n").map {|i| i.strip}.select {|i| i.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Number of Persons with covid/i}.first
@@ -1094,7 +1101,7 @@ return h
   end
 
   def parse_nj(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     cols = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
@@ -1121,7 +1128,7 @@ return h
   end
 
   def parse_nm(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     cols = []
     loop do
@@ -1159,14 +1166,14 @@ return h
   end
 
   def parse_nv(h)
-    @driver.navigate.to(@url) rescue nil
+    crawl_page
     if @s =~ /"https:\/\/app\.powerbigov([^"]+)"/
       @url = 'https://app.powerbigov' + $1
     else
       @errors << 'bi url not found'
       return h
     end
-    @driver.navigate.to(@url)
+    crawl_page
     @s = ''
     sec = SEC * 3
     loop do
@@ -1195,7 +1202,7 @@ return h
   end
 
   def parse_ny(h)
-    @driver.navigate.to @url
+    crawl_page
     puts "death manual"
     h[:deaths] = 280 # from nyc report TODO
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
@@ -1207,7 +1214,8 @@ return h
     # TOOD death data
     unless @auto_flag
       url = 'https://www1.nyc.gov/assets/doh/downloads/pdf/imm/covid-19-daily-data-summary.pdf'
-      `curl #{url} -o nyc.pdf`
+      `curl #{url} -o #{@path}#{@st}/#{@filetime}_1.pdf`
+      `open #{@path}#{@st}/#{@filetime}_1.pdf`
       puts "enter nyc deaths manually"
       byebug
     end
@@ -1215,7 +1223,7 @@ return h
   end
 
   def parse_oh(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     cols = []
     loop do
@@ -1253,7 +1261,7 @@ return h
   end
 
   def parse_ok(h)
-    #@driver.navigate.to(@url) rescue nil
+    crawl_page
     #byebug
     cols = @doc.css('table').map {|i| i.text}.select {|i| i=~/Oklahoma Test Results/}.last.split("\n").select {|i| i.strip.size > 0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Positive \(In-State\)/}.first
@@ -1291,7 +1299,7 @@ return h
   end  
 
   def parse_or(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/3
     cols = []
     loop do
@@ -1344,7 +1352,7 @@ return h
   end  
 
   def parse_pa(h)
-    @driver.navigate.to @url
+    crawl_page
     if s = @driver.find_elements(class: 'ms-rteTable-default')[0]
       s = s.text.gsub(',','')
     else
@@ -1397,7 +1405,7 @@ return h
   end
 
   def parse_ri(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     loop do
       begin
@@ -1433,7 +1441,7 @@ return h
   end
 
   def parse_sc(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     rows = []
     loop do
@@ -1464,11 +1472,11 @@ return h
     end
 =end
     if @driver.page_source =~ /"([^"]+)arcgis\.com([^"]+)"/
-      @driver.navigate.to($1 + 'arcgis.com' + $2)
+      crawl_page($1 + 'arcgis.com' + $2)
       sec = SEC
       loop do
         if @driver.page_source =~ /src=\"https:\/\/arcg.is([^"]+)/
-          @driver.navigate.to('https://arcg.is' + $1)
+          crawl_page('https://arcg.is' + $1)
           @s = @driver.find_elements(class: 'dashboard-page').first.text
           if @s =~ /Deaths in Individuals with COVID-19 infection\n([^\n]+)\n/
             h[:deaths] = string_to_i($1)
@@ -1496,6 +1504,7 @@ return h
   end
 
   def parse_sd(h)
+    crawl_page
     tables = @doc.css('table').map {|i| i.text.gsub(',','').gsub(/\s+/,' ').gsub('*','')}
     if (t = tables.select {|i| i=~/SOUTH DAKOTA CASE COUNTS/}[0]) &&
       t =~ /Positive ([0-9]+) Negative ([0-9]+) Pending ([0-9]+)/
@@ -1516,7 +1525,7 @@ return h
   end  
 
   def parse_tn(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     s = @doc.css('table')[0].text.gsub(',','')
     if s =~ /Laboratory Type\n\nPositive Test\n\nNegative Tests\n\nTotal/ &&
@@ -1537,8 +1546,9 @@ return h
   end
 
   def parse_tx(h)
+    crawl_page
     if @url = @s.scan(/[^'"]+maps\.arcgis\.com\/apps\/opsdashboard[^'"]+/).first
-      @driver.navigate.to @url
+      crawl_page
     else
       @errors << 'missing url'
       return h
@@ -1569,10 +1579,10 @@ return h
       sleep 1
     end
     h
-  end # parse_tx  
+  end
 
   def parse_ut(h)
-    @driver.navigate.to @url
+    crawl_page
     @s = @driver.find_elements(class: 'dashboard-page-wrapper').first.text
     if @s =~ /Report Date: ([^\n]+)\n([^\n]+)\nCOVID-19 Cases\n([^\n]+)*\nReported People Tested\n([^\n]+)\nCOVID-19 Deaths\n/
       h[:date] = $1
@@ -1583,22 +1593,22 @@ return h
       @errors << 'missing positive'
     end
     h
-  end # parse_ut
+  end
 
   def parse_va(h)
+    crawl_page
     if @auto_flag
       puts "skipping VA"
       h[:skip] = true
       return h
     end
-    @driver.navigate.to @url
     if @driver.page_source =~ /<iframe src=\"https:\/\/public\.tableau\.com([^"]+)"/
       @url = 'https://public.tableau.com' + $1
     else
       @errors << 'missing tableau url'
       return h
     end 
-    @driver.navigate.to @url
+    crawl_page
     @driver.find_element(:xpath, '//*[@id="download-ToolbarButton"]').click
     @driver.find_element(:xpath, '//*[@id="DownloadDialog-Dialog-Body-Id"]/div/button[4]').click
     sleep 3
@@ -1606,6 +1616,9 @@ return h
     sleep 5
     reader = PDF::Reader.new(File.join(ENV['userprofile'], "Downloads", "Virginia COVID-19 Dashboard.pdf"))
     result = reader.page(1).text
+    # TODO save this pdf in /data/va dir
+    # might want to reference other text to make sure it hasn't changed
+    # page.text.gsub(/\s+/, ' ').gsub(',','') =~ /Number of People Tested\^ Cases\*? Hospitalizations Deaths ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)/
     resultArray = result.gsub(/\s+/, ' ').gsub(',','').scan(/\d+/).map(&:to_i)
     h[:tested] = resultArray[1]
     h[:positive] = resultArray[2]
@@ -1617,7 +1630,7 @@ return h
   end
   
   def parse_vt(h)
-    #@driver.navigate.to @url
+    crawl_page
     #byebug
     if @s =~ /Last updated: ([^<]+)</
       h[:date] = $1.strip
@@ -1654,7 +1667,7 @@ return h
   end
 
   def parse_wa(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC
     cols = []
     loop do
@@ -1687,7 +1700,7 @@ return h
   end
 
   def parse_wi(h)
-    @driver.navigate.to @url
+    crawl_page
     if @s =~ /As of ([^<]+)</
       h[:date] = $1.strip
     else
@@ -1702,10 +1715,10 @@ return h
       @errors << "missing cases"
     end
     h
-  end # parse_wi
+  end
 
   def parse_wv(h)
-    @driver.navigate.to @url
+    crawl_page
     sec = SEC/5
     cols = []
     loop do
@@ -1751,7 +1764,7 @@ return h
   end
 
   def parse_wy(h)
-    @driver.navigate.to @url
+    crawl_page
     s = @driver.find_element(class: 'page').text
     #byebug
     if s =~ /At this time there are ([^\s]+) reported cases/
@@ -1782,7 +1795,7 @@ return h
   ######################################
 
   # look for a word on the webpage
-  # TODO birth is hard coded
+  # deprecated, not used
   def search_term(word='death')
     doc_text = @doc.text.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
     if (i = (doc_text =~ /#{word}/i)) && !(doc_text =~ /birth/i)
@@ -1893,6 +1906,18 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
     h
   end
 
+  def crawl_page(url = @url)
+    begin
+      @driver.navigate.to(url)
+      open("#{@path}#{@st}/#{@filetime}_#{@page_count+=1}", 'w') do |f| 
+        f.puts url
+        f.puts @driver.page_source
+      end
+    rescue => e
+      @errors << "crawl_page failed: #{e.inspect}"
+    end
+  end
+
   # main execution loop
   # 
   # default is to run all states in automatic mode
@@ -1908,29 +1933,18 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
     tested   = {:all => 0}
     positive = {:all => 0}
     deaths   = {:all => 0}
-
-    pui      = {:all => 0}
-    #pui_cumulative
-    #quarantined
-
     skip_flag = OFFSET
-    filetime = Time.now.to_s[0..18].gsub(' ', '-')
-    filetime = filetime.gsub(':', '.')
+    @filetime = Time.now.to_s[0..18].gsub(' ', '-').gsub(':', '.')
 
     for @st, @url in (open('states.csv').readlines.map {|i| i.strip.split("\t")}.map {|st, url| [st.downcase, url]})
-      if crawl_list.size > 0
-        next unless crawl_list.include?(@st)
-      end
+      @page_count = 0 # used for naming saved page
+      next if crawl_list.size > 0 && !(crawl_list.include?(@st))
       puts "CRAWLING: #{@st}"
-
       skip_flag = false if @st == OFFSET
       next if skip_flag
       next if SKIP_LIST.include?(@st)
-      # `mkdir -p #{@path}#{@st}`
       unless Dir.exist?("#{@path}#{@st}")
-        unless Dir.exist?("#{@path}")
-          Dir.mkdir("#{@path}")
-        end
+        Dir.mkdir("#{@path}") unless Dir.exist?("#{@path}")
         Dir.mkdir("#{@path}#{@st}")
       end 
     
@@ -1948,8 +1962,7 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
       if h[:skip]
         skipped_crawl << @st
       else
-        open("#{@path}#{@st}/#{filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
-
+        open("#{@path}#{@st}/#{@filetime}", 'w') {|f| f.puts @s} # @s might be modified in parse
         count = 0
         tested_new = 0
         count += 1 if h[:tested]
@@ -2025,8 +2038,6 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
         positive[@st.to_sym] = h[:positive]
         deaths[:all] += h[:deaths].to_i
         deaths[@st.to_sym] = h[:deaths]
-        pui[:all] += h[:pui].to_i
-        pui[@st.to_sym] = h[:pui]
         tested[:all] += h[:tested].to_i
         tested[@st.to_sym] = h[:tested]
 
@@ -2056,20 +2067,6 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
           puts
         end
 
-        unless h[:deaths]
-          x = nil
-          begin
-            x = search_term('death')
-          rescue => e
-            puts "search_term failed: #{e.inspect}"
-          end
-          if x
-            puts h.inspect
-            byebug unless @auto_flag
-            puts
-          end
-        end
-
         h_all << h  
         # save parsed h
         open("#{@path}#{@st}.log",'a') {|f| f.puts h.inspect} if h && h.size > 0 && !(h[:skip])
@@ -2086,9 +2083,6 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
     puts
     puts "deaths:"
     puts deaths.inspect
-    puts
-    puts "pui:"
-    puts pui.inspect
     puts
     puts "tested:"
     puts tested.inspect
