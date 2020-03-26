@@ -1,6 +1,7 @@
 require 'byebug'
 require 'nokogiri'
-require "selenium-webdriver"
+require 'selenium-webdriver'
+require 'pdf-reader'
 
 # not automatic:
 # ['ak', "az", "ct", 'hi', 'ma', "nd", 'ny', "va"] 
@@ -1598,14 +1599,20 @@ return h
       return h
     end 
     @driver.navigate.to @url
-    puts 'need to manually get numbers from tableau'
-    h[:tested] = 5370
-    h[:positive] = 391
-    h[:hospitalized] = 59
+    @driver.find_element(:xpath, '//*[@id="download-ToolbarButton"]').click
+    @driver.find_element(:xpath, '//*[@id="DownloadDialog-Dialog-Body-Id"]/div/button[4]').click
+    sleep 3
+    @driver.find_element(:xpath, '//*[@id="PdfDialog-Dialog-Body-Id"]/div/div[2]/div[4]/button').click
+    sleep 5
+    reader = PDF::Reader.new(File.join(ENV['userprofile'], "Downloads", "Virginia COVID-19 Dashboard.pdf"))
+    result = reader.page(1).text
+    resultArray = result.gsub(/\s+/, ' ').gsub(',','').scan(/\d+/).map(&:to_i)
+    h[:tested] = resultArray[1]
+    h[:positive] = resultArray[2]
+    h[:hospitalized] = resultArray[3]
     h[:negative]
     h[:pending]
-    h[:deaths] = 9 # TODO manual
-    byebug
+    h[:deaths] = resultArray[4]
     h
   end
   

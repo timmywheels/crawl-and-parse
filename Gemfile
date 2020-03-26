@@ -13,3 +13,7 @@ gem "nokogiri", "~> 1.10"
 gem "selenium-webdriver", "~> 3.142"
 
 gem "geckodriver-helper", "~> 0.24.0"
+
+gem "ffi", "~> 1.12"
+
+gem "pdf-reader", "~> 2.4"
