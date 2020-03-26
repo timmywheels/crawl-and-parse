@@ -86,7 +86,7 @@ class Crawler
     sec = SEC
     loop do
       t = @driver.find_elements(class: 'dashboard-page')[0]
-      if t && (@s=t.text.gsub(',','')) =~ /CONFIRMED\n([\d]+)\nTOTAL TESTED\*?\n([\d]+)\nDIED FROM\nTHIS ILLNESS\n([\d]+)/
+      if t && (@s=t.text.gsub(',','')) =~ /CONFIRMED\n([\d]+)\nTOTAL TESTED\*?\n([\d]+)\nDEATHS\s?\n([\d]+)/
         h[:tested] = string_to_i($2)
     	h[:deaths] = string_to_i($3)
         h[:positive] = string_to_i($1)
@@ -278,10 +278,10 @@ crawl_page urls.shift # TODO
   end
 
   def parse_ct(h)
-h[:tested]=5898
-h[:positive]=875
-h[:deaths]=19
-#h[:hospitalized] = 54
+h[:tested]=6500
+h[:positive]=1012
+h[:deaths]=21
+h[:hospitalized] = 125
 h[:negative]
 h[:pending]
     crawl_page
@@ -449,17 +449,25 @@ h[:pending]
 
   def parse_hi(h)
     crawl_page
+    s=@driver.find_element(id: 'main').text.gsub(',','')
     tables = @driver.find_elements(class: 'data_list').map {|i| i.text.gsub(',','')}
-    if (t=tables.select {|i| i=~/Total cases/}.first) && t =~ /Total cases: ([\d]+)/
+    if t=s.scan(/Total \(new\):\s([\d]+)/).first
+      h[:positive] = string_to_i(t[0]) 
+    elsif (t=tables.select {|i| i=~/Total cases/}.first) && t =~ /Total cases: ([\d]+)/
       h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
     end
-    if (t=tables.select {|i| i=~/Hawaii deaths/}.first) && t =~ /Hawaii deaths: ([\d]+)/
+    if t=s.scan(/Total Deaths:\s([\d]+)/).first
+      h[:deaths] = string_to_i(t[0])
+    elsif (t=tables.select {|i| i=~/Hawaii deaths/}.first) && t =~ /Hawaii deaths: ([\d]+)/
       h[:deaths] = string_to_i($1)
     else
       @errors << 'missing deaths'
     end
+
+    
+
     # county cases
     # hospitalized is in PR
     h[:tested] = 3862+322+263  # from PR
@@ -719,8 +727,8 @@ h[:pending]
       sleep 1
     end
     puts "pdf? manual entry of tested from pdf"
-    h[:tested] = 19794
-    h[:deaths] = 15
+    h[:tested] = 23621
+    h[:deaths] = 25
 
     if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as-of-march-25-2020[^'"]+)/
       url = 'https://www.mass.gov' + $1
@@ -1013,10 +1021,10 @@ h[:pending]
       return h
     end
     puts "image file for ND"
-    h[:tested] = 2091
-    h[:positive] = 52
-    h[:negative] = 2039
-    h[:hospitalized] = 10
+    h[:tested] = 2261
+    h[:positive] = 58
+    h[:negative] = 2203
+    h[:hospitalized] = 11
     h[:pending] = 0
     h[:deaths] = 0 # TODO manual
     byebug 
@@ -1293,7 +1301,8 @@ h[:pending]
     cols = []
     loop do
       begin
-        cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Oregon Test Results as of /}.first.split("\n")
+        cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Total Completed Tests/}.first.split("\n")
+
         break
       rescue => e
         if sec == 0
@@ -1320,18 +1329,13 @@ h[:pending]
     else
       @warnings << 'missing pending'
     end
-    if (x = cols.select {|v,i| v=~/^Total /}.first) 
+    if (x = cols.select {|v,i| v=~/^Total Com/}.first) 
       h[:tested] = string_to_i(x.split.last)
     else
       @errors << 'missing tested'
     end
-    @driver.find_elements(class: 'prefix-overlay-close').first.click
-    x = @driver.find_elements(class: 'btn').map {|i| [i, i.text]}.select {|i,j| j=~/Demographic Information/}.first
-    x.first.click
-    cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Deaths/}.first.split("\n")
-    if (x = cols.select {|i| i=~/^Total ([0-9,]+) ([0-9,]+)/}.first) &&
-      x =~ /^Total ([0-9,]+) ([0-9,]+)/
-      h[:deaths] = string_to_i($2)
+    if (x = cols.select {|v,i| v=~/^Total Deaths/}.first)
+      h[:deaths] = string_to_i(x.split.last)
     else
       @errors << 'missing deaths'
     end
