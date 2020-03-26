@@ -64,8 +64,13 @@ class Crawler
       @errors << 'missing deaths'
     end
     puts 'AK: tested data in image?'
-    byebug unless @auto_flag
-    h[:tested] = 994+697 # from image! save image?
+
+    `curl http://dhss.alaska.gov/dph/Epi/id/PublishingImages/COVID-19/COVID-1_AKtesting_cumulative.png > #{@path}#{@st}/#{@filetime}_1.png`
+    h[:tested] = 1051+809 # from image! save image?
+    unless @auto_flag
+      `open #{@path}#{@st}/#{@filetime}_1.png`
+      byebug 
+    end
     # Cumulative number of cases hospitalized to date:  0
     # positive by region available
     # no death data
@@ -260,8 +265,9 @@ class Crawler
       sleep 1
     end
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
-    urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i}.sort.reverse
+    urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i} #.sort.reverse
     crawl_page urls.shift
+crawl_page urls.shift # TODO
     if (x=@driver.find_element(id: 'MainContent')) && x.text =~ /pproximately ([0-9,]+) tests had been conducted in California/
       h[:tested] = string_to_i($1)
     else
@@ -353,9 +359,9 @@ h[:pending]
     sec = SEC/2
     loop do
       @s = @driver.find_elements(class: 'layout-reference')[0].text
-      if @s =~ /Positive Cases\n([^\n]+)\nTotal Deaths\n([^\n]+)\n/
+      if @s =~ /Total Cases\n([^\n]+)/ #\nTotal Deaths\n([^\n]+)\n/
         h[:positive] = string_to_i($1)
-        h[:deaths] = string_to_i($2)
+        #h[:deaths] = string_to_i($2)
         break
       end
       sec -= 1
@@ -367,6 +373,7 @@ h[:pending]
       sec -= 1
       sleep 1
     end
+    @errors << 'DE took deaths off'
     # TODO tested, not available
     # TODO counties
     h
@@ -459,14 +466,13 @@ h[:pending]
 
   def parse_hi(h)
     crawl_page
-    #byebug
-    @s = @doc.css('table')[0].text.gsub(',','')
-    if @s =~ /\nTotal \(new\):\s([0-9]+)/
+    tables = @driver.find_elements(class: 'data_list').map {|i| i.text.gsub(',','')}
+    if (t=tables.select {|i| i=~/Total cases/}.first) && t =~ /Total cases: ([\d]+)/
       h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
     end
-    if @s =~ /\nTotal Deaths:\s([0-9]+)/
+    if (t=tables.select {|i| i=~/Hawaii deaths/}.first) && t =~ /Hawaii deaths: ([\d]+)/
       h[:deaths] = string_to_i($1)
     else
       @errors << 'missing deaths'
@@ -1024,10 +1030,10 @@ h[:pending]
       return h
     end
     puts "image file for ND"
-    h[:tested] = 1955
-    h[:positive] = 45
-    h[:negative] = 1910
-    h[:hospitalized] = 8
+    h[:tested] = 2091
+    h[:positive] = 52
+    h[:negative] = 2039
+    h[:hospitalized] = 10
     h[:pending] = 0
     h[:deaths] = 0 # TODO manual
     byebug 
@@ -2051,7 +2057,6 @@ options = Selenium::WebDriver::Firefox::Options.new(profile: profile)
           puts "ERROR in #{@st}: #{@errors.inspect}"
           puts "new h: #{h}"
           unless @auto_flag
-            @driver.navigate.to @url
             byebug
             puts
           end
