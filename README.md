@@ -8,7 +8,7 @@ or specific ones.
 Only the main fields are being captured, so more work is needed to capture additional
 fields. Also county data is a big todo item.
 
-The crawled data is being hosted on http://coronavirusapi.com/
+The crawled data is being hosted on https://coronavirusapi.com/
 That project could also use help!
 
 For Windows users, following is required to get up and running:
