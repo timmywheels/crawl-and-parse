@@ -8,6 +8,8 @@ require 'pdf-reader'
 # pdf for more data: ct, ma, ny
 # image: ak
 
+# counties done: ny
+
 # page missing data: de, ia, ky, md, me, mi, mo, mt, ne, nm, oh, ri
 
 SEC = 60 # seconds to wait for page to load
@@ -1098,7 +1100,6 @@ h[:pending]
 
   def parse_nj(h)
     crawl_page
-    #byebug
     cols = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -1119,6 +1120,45 @@ h[:pending]
       h[:deaths] = string_to_i(cols[x[1]+1])
     else 
       @errors << 'missing deaths'
+    end
+    url = 'https://covid19.nj.gov/'
+    crawl_page url
+    url = 'https://' + @driver.page_source.scan(/maps\.arcgis\.com\/apps\/opsdashboard\/index\.html[^'"]+/)[0]
+    crawl_page url
+    sec = SEC
+    county_pos = 0
+    loop do 
+      cols = (@driver.find_element(class: 'dashboard-page').text.split("\n").map {|i| i.strip}) rescue []
+      if cols.size > 0
+        if (x=cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Bergen County/}.first) &&
+          (y=cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Salem County/}.first)
+          county_count = ((y[1]-x[1])/2+1)
+          if county_count == 21
+            h[:counties] = []
+            county_pos = 0
+            county_count.times do |i|
+              h_county = {}
+              j = i*2+x[1]
+              h_county[:name] = cols[j]
+              h_county[:positive] = string_to_i(cols[j+1].split("\s").first)
+              county_pos += string_to_i(cols[j+1].split("\s").first)
+              h[:counties] << h_county
+            end
+            break
+          end    
+        end
+      end
+      sec -= 1
+      if sec == 0
+        @errors << 'counties failed'
+        break
+      end
+      puts 'sleeping'
+      sleep 1
+    end
+    if h[:positive] != county_pos
+      #@errors << 'county pos do not add up'
+      # provisional pos are not counted
     end
     h
   end
@@ -1200,10 +1240,24 @@ h[:pending]
   def parse_ny(h)
     crawl_page
     puts "death manual"
-    h[:deaths] = 280 # from nyc report TODO
+    h[:deaths] = 365 # from nyc report TODO
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
+    county_pos = 0
     if rows[-2] == "Total Number of Positive Cases"
       h[:positive] = rows[-1].to_i
+      county_count = ((rows.size-4)/2)
+      if rows[1] == "Positive Cases" && county_count == 53
+        h[:counties] = []
+        county_count.times do |i|
+          h_county = {}
+          h_county[:name] = rows[i*2+2]
+          h_county[:positive] = string_to_i(rows[i*2+3])
+          county_pos += h_county[:positive]
+          h[:counties] << h_county
+        end
+      else
+        @errors << 'incorrect table'
+      end
     else
       @errors << "missing positive"
     end
@@ -1214,6 +1268,9 @@ h[:pending]
       `open #{@path}#{@st}/#{@filetime}_1.pdf`
       puts "enter nyc deaths manually"
       byebug
+    end
+    if h[:positive] != county_pos
+      @errors << "county pos do not add up: #{h[:positive]} vs #{county_pos}"
     end
     h
   end
@@ -1688,6 +1745,22 @@ h[:pending]
     else
       @errors << 'missing deaths'
     end
+    if (i=cols.find_index("County Positive/Confirmed Cases Deaths")) && (cols[i+33] =~ /^Yakima/)
+      h[:counties] = []
+      (i+1..(i+33)).to_a.each do |j|
+        if cols[j].gsub(',','') =~ /(.*)\s([\d]+)\s([\d]+)/
+          h_county = {}
+          h_county[:name] = $1
+          h_county[:positive] = string_to_i($2)
+          h_county[:death] = string_to_i($3)
+          h[:counties] << h_county
+        else
+          @errors << 'county parse error'
+        end
+      end
+    else
+      @errors << 'counties failed'
+    end 
     h
   end
 
