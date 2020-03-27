@@ -1,5 +1,8 @@
 # covid-19-crawler
 
+If you'd like to help the effort, email coronavirusapi@googlegroups.com
+Thanks!
+
 The main code is in crawler.rb. The crawler and parsers are there for the 50
 US states and DC. The focus is to collect offical published COVID-19 statistics.
 In the bin/ folder are useful commands to run the crawl and parse or all states

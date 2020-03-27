@@ -8,6 +8,8 @@ require 'pdf-reader'
 # pdf for more data: ct, ma, ny
 # image: ak
 
+# counties done: ny
+
 # page missing data: de, ia, ky, md, me, mi, mo, mt, ne, nm, oh, ri
 
 SEC = 60 # seconds to wait for page to load
@@ -86,7 +88,7 @@ class Crawler
     sec = SEC
     loop do
       t = @driver.find_elements(class: 'dashboard-page')[0]
-      if t && (@s=t.text.gsub(',','')) =~ /CONFIRMED\n([\d]+)\nTOTAL TESTED\*?\n([\d]+)\nDIED FROM\nTHIS ILLNESS\n([\d]+)/
+      if t && (@s=t.text.gsub(',','')) =~ /CONFIRMED\n([\d]+)\nTOTAL TESTED\*?\n([\d]+)\nDEATHS\s?\n([\d]+)/
         h[:tested] = string_to_i($2)
     	h[:deaths] = string_to_i($3)
         h[:positive] = string_to_i($1)
@@ -250,7 +252,6 @@ class Crawler
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
     urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i} #.sort.reverse
     crawl_page urls.shift
-crawl_page urls.shift # TODO
     if (x=@driver.find_element(id: 'MainContent')) && x.text =~ /pproximately ([0-9,]+) tests had been conducted in California/
       h[:tested] = string_to_i($1)
     else
@@ -278,10 +279,10 @@ crawl_page urls.shift # TODO
   end
 
   def parse_ct(h)
-h[:tested]=5898
-h[:positive]=875
-h[:deaths]=19
-#h[:hospitalized] = 54
+h[:tested]=6500
+h[:positive]=1012
+h[:deaths]=21
+h[:hospitalized] = 125
 h[:negative]
 h[:pending]
     crawl_page
@@ -449,17 +450,25 @@ h[:pending]
 
   def parse_hi(h)
     crawl_page
+    s=@driver.find_element(id: 'main').text.gsub(',','')
     tables = @driver.find_elements(class: 'data_list').map {|i| i.text.gsub(',','')}
-    if (t=tables.select {|i| i=~/Total cases/}.first) && t =~ /Total cases: ([\d]+)/
+    if t=s.scan(/Total \(new\):\s([\d]+)/).first
+      h[:positive] = string_to_i(t[0]) 
+    elsif (t=tables.select {|i| i=~/Total cases/}.first) && t =~ /Total cases: ([\d]+)/
       h[:positive] = string_to_i($1)
     else
       @errors << 'missing positive'
     end
-    if (t=tables.select {|i| i=~/Hawaii deaths/}.first) && t =~ /Hawaii deaths: ([\d]+)/
+    if t=s.scan(/Total Deaths:\s([\d]+)/).first
+      h[:deaths] = string_to_i(t[0])
+    elsif (t=tables.select {|i| i=~/Hawaii deaths/}.first) && t =~ /Hawaii deaths: ([\d]+)/
       h[:deaths] = string_to_i($1)
     else
       @errors << 'missing deaths'
     end
+
+    
+
     # county cases
     # hospitalized is in PR
     h[:tested] = 3862+322+263  # from PR
@@ -719,8 +728,8 @@ h[:pending]
       sleep 1
     end
     puts "pdf? manual entry of tested from pdf"
-    h[:tested] = 19794
-    h[:deaths] = 15
+    h[:tested] = 23621
+    h[:deaths] = 25
 
     if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as-of-march-25-2020[^'"]+)/
       url = 'https://www.mass.gov' + $1
@@ -1013,10 +1022,10 @@ h[:pending]
       return h
     end
     puts "image file for ND"
-    h[:tested] = 2091
-    h[:positive] = 52
-    h[:negative] = 2039
-    h[:hospitalized] = 10
+    h[:tested] = 2261
+    h[:positive] = 58
+    h[:negative] = 2203
+    h[:hospitalized] = 11
     h[:pending] = 0
     h[:deaths] = 0 # TODO manual
     byebug 
@@ -1091,7 +1100,6 @@ h[:pending]
 
   def parse_nj(h)
     crawl_page
-    #byebug
     cols = @doc.css('table')[0].text.split("\n").select {|i| i.strip.size >0}
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Positive/}.first
       h[:positive] = string_to_i(cols[x[1]+1])
@@ -1112,6 +1120,45 @@ h[:pending]
       h[:deaths] = string_to_i(cols[x[1]+1])
     else 
       @errors << 'missing deaths'
+    end
+    url = 'https://covid19.nj.gov/'
+    crawl_page url
+    url = 'https://' + @driver.page_source.scan(/maps\.arcgis\.com\/apps\/opsdashboard\/index\.html[^'"]+/)[0]
+    crawl_page url
+    sec = SEC
+    county_pos = 0
+    loop do 
+      cols = (@driver.find_element(class: 'dashboard-page').text.split("\n").map {|i| i.strip}) rescue []
+      if cols.size > 0
+        if (x=cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Bergen County/}.first) &&
+          (y=cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^Salem County/}.first)
+          county_count = ((y[1]-x[1])/2+1)
+          if county_count == 21
+            h[:counties] = []
+            county_pos = 0
+            county_count.times do |i|
+              h_county = {}
+              j = i*2+x[1]
+              h_county[:name] = cols[j]
+              h_county[:positive] = string_to_i(cols[j+1].split("\s").first)
+              county_pos += string_to_i(cols[j+1].split("\s").first)
+              h[:counties] << h_county
+            end
+            break
+          end    
+        end
+      end
+      sec -= 1
+      if sec == 0
+        @errors << 'counties failed'
+        break
+      end
+      puts 'sleeping'
+      sleep 1
+    end
+    if h[:positive] != county_pos
+      #@errors << 'county pos do not add up'
+      # provisional pos are not counted
     end
     h
   end
@@ -1193,10 +1240,24 @@ h[:pending]
   def parse_ny(h)
     crawl_page
     puts "death manual"
-    h[:deaths] = 280 # from nyc report TODO
+    h[:deaths] = 365 # from nyc report TODO
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
+    county_pos = 0
     if rows[-2] == "Total Number of Positive Cases"
       h[:positive] = rows[-1].to_i
+      county_count = ((rows.size-4)/2)
+      if rows[1] == "Positive Cases" && county_count == 53
+        h[:counties] = []
+        county_count.times do |i|
+          h_county = {}
+          h_county[:name] = rows[i*2+2]
+          h_county[:positive] = string_to_i(rows[i*2+3])
+          county_pos += h_county[:positive]
+          h[:counties] << h_county
+        end
+      else
+        @errors << 'incorrect table'
+      end
     else
       @errors << "missing positive"
     end
@@ -1207,6 +1268,9 @@ h[:pending]
       `open #{@path}#{@st}/#{@filetime}_1.pdf`
       puts "enter nyc deaths manually"
       byebug
+    end
+    if h[:positive] != county_pos
+      @errors << "county pos do not add up: #{h[:positive]} vs #{county_pos}"
     end
     h
   end
@@ -1293,7 +1357,8 @@ h[:pending]
     cols = []
     loop do
       begin
-        cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Oregon Test Results as of /}.first.split("\n")
+        cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Total Completed Tests/}.first.split("\n")
+
         break
       rescue => e
         if sec == 0
@@ -1320,18 +1385,13 @@ h[:pending]
     else
       @warnings << 'missing pending'
     end
-    if (x = cols.select {|v,i| v=~/^Total /}.first) 
+    if (x = cols.select {|v,i| v=~/^Total Com/}.first) 
       h[:tested] = string_to_i(x.split.last)
     else
       @errors << 'missing tested'
     end
-    @driver.find_elements(class: 'prefix-overlay-close').first.click
-    x = @driver.find_elements(class: 'btn').map {|i| [i, i.text]}.select {|i,j| j=~/Demographic Information/}.first
-    x.first.click
-    cols = @driver.find_elements(class: 'card-body').map {|i| i.text.gsub(',','')}.select {|i| i=~/Deaths/}.first.split("\n")
-    if (x = cols.select {|i| i=~/^Total ([0-9,]+) ([0-9,]+)/}.first) &&
-      x =~ /^Total ([0-9,]+) ([0-9,]+)/
-      h[:deaths] = string_to_i($2)
+    if (x = cols.select {|v,i| v=~/^Total Deaths/}.first)
+      h[:deaths] = string_to_i(x.split.last)
     else
       @errors << 'missing deaths'
     end
@@ -1685,6 +1745,22 @@ h[:pending]
     else
       @errors << 'missing deaths'
     end
+    if (i=cols.find_index("County Positive/Confirmed Cases Deaths")) && (cols[i+33] =~ /^Yakima/)
+      h[:counties] = []
+      (i+1..(i+33)).to_a.each do |j|
+        if cols[j].gsub(',','') =~ /(.*)\s([\d]+)\s([\d]+)/
+          h_county = {}
+          h_county[:name] = $1
+          h_county[:positive] = string_to_i($2)
+          h_county[:death] = string_to_i($3)
+          h[:counties] << h_county
+        else
+          @errors << 'county parse error'
+        end
+      end
+    else
+      @errors << 'counties failed'
+    end 
     h
   end
 
