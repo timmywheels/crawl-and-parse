@@ -10,7 +10,7 @@ require 'pdf-reader'
 
 # counties done: ny
 
-# page missing data: de, ia, ky, md, me, mi, mo, mt, ne, nm, oh, ri
+# page missing data: de, ia, ky, md, me, mi, mo, mt, ne, oh, ri
 
 SEC = 60 # seconds to wait for page to load
 OFFSET = nil # if set, start running at that state
@@ -68,7 +68,7 @@ class Crawler
     puts 'AK: tested data in image?'
 
     `curl http://dhss.alaska.gov/dph/Epi/id/PublishingImages/COVID-19/COVID-1_AKtesting_cumulative.png > #{@path}#{@st}/#{@filetime}_1.png`
-    h[:tested] = 1051+809 # from image! save image?
+    h[:tested] = 1225+1163 # from image! save image?
     unless @auto_flag
       `open #{@path}#{@st}/#{@filetime}_1.png`
       byebug 
@@ -279,10 +279,10 @@ class Crawler
   end
 
   def parse_ct(h)
-h[:tested]=6500
-h[:positive]=1012
-h[:deaths]=21
-h[:hospitalized] = 125
+h[:tested]=8400
+h[:positive]=1291
+h[:deaths]=27
+h[:hospitalized] = 173
 h[:negative]
 h[:pending]
     crawl_page
@@ -728,10 +728,9 @@ h[:pending]
       sleep 1
     end
     puts "pdf? manual entry of tested from pdf"
-    h[:tested] = 23621
-    h[:deaths] = 25
-
-    if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as-of-march-25-2020[^'"]+)/
+h[:deaths]=35
+h[:tested]=29371
+    if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as[^'"]+)/
       url = 'https://www.mass.gov' + $1
       `curl #{url} -o #{@path}#{@st}/#{@filetime}_1.pdf`
       `open #{@path}#{@st}/#{@filetime}_1.pdf`
@@ -813,6 +812,7 @@ h[:pending]
   end
 
   def parse_mi(h)
+# TODO tests back
     # TODO county, sex, age, hospitalization
     crawl_page
     x = @driver.find_elements(class: 'btn').select {|i| i.text =~ /Cumulative Data/i}.first
@@ -956,13 +956,14 @@ h[:pending]
       flag = false
       if @s =~ /Total Cases\n([^\n]+)\n/
         h[:positive] = string_to_i($1)
+        sleep 2
       else
         flag = true
       end
       if @s =~ /Total Number of Tests Completed [\/0-9]+:([^\n]+)/
         h[:tested] = string_to_i($1)
       else
-        flag = true
+        #flag = true
       end
       if flag
         sec -= 1
@@ -987,7 +988,7 @@ h[:pending]
     loop do
       begin
         cols = @driver.find_elements(class: 'content').map {|i| i.text}.select {|i| i=~/NC Completed Tests/i}.last.split("\n").map{|i| i.strip}.select{|i| i.size>0}
-        byebug if cols.size != 10 && !@auto_flag
+        byebug if cols.size != 13 && !@auto_flag
         break
       rescue => e
         sleep 1
@@ -997,19 +998,24 @@ h[:pending]
       end
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^NC Cases/}.first
-      h[:positive] = string_to_i(cols[x[1]+3])
+      h[:positive] = string_to_i(cols[x[1]+4])
     else
       @errors << 'missing positive'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^NC Deaths/i}.first
-      h[:deaths] = string_to_i(cols[x[1]+3])
+      h[:deaths] = string_to_i(cols[x[1]+4])
     else
       @errors << 'missing deaths'
     end
     if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/^NC Completed Tests/i}.first
-      h[:tested] = string_to_i(cols[x[1]+3])
+      h[:tested] = string_to_i(cols[x[1]+4])
     else
       @errors << 'missing tested'
+    end
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/Hospitalized/i}.first
+      h[:hospitalized] = string_to_i(cols[x[1]+4])
+    else
+      @errors << 'missing hospitalized'
     end
     h
   end
@@ -1022,12 +1028,12 @@ h[:pending]
       return h
     end
     puts "image file for ND"
-    h[:tested] = 2261
-    h[:positive] = 58
-    h[:negative] = 2203
-    h[:hospitalized] = 11
+    h[:tested] = 2708
+    h[:positive] = 68
+    h[:negative] = 2640
+    h[:hospitalized] = 16
     h[:pending] = 0
-    h[:deaths] = 0 # TODO manual
+    h[:deaths] = 1 # TODO manual
     byebug 
     h
   end  
@@ -1197,7 +1203,11 @@ h[:pending]
     else
       @errors << 'missing tested'
     end
-    # TODO no death data
+    if x = cols.map.with_index {|v,i| [v,i]}.select {|v,i| v=~/COVID-Related Deaths in New Mexico/i}.first
+      h[:deaths] = string_to_i(x[0].split.last)
+    else
+      @errors << 'missing deaths'
+    end
     h
   end
 
@@ -1240,7 +1250,7 @@ h[:pending]
   def parse_ny(h)
     crawl_page
     puts "death manual"
-    h[:deaths] = 365 # from nyc report TODO
+    h[:deaths] = 366 # from nyc report TODO
     rows = @doc.css('table')[0].text.gsub(',','').split("\n").map {|i| i.strip}.select {|i| i.size>0}
     county_pos = 0
     if rows[-2] == "Total Number of Positive Cases"
@@ -1417,7 +1427,7 @@ h[:pending]
       @errors << 'missing pos neg deaths'
     end
     h[:county_positive] = []
-    cols = @driver.find_elements(class: 'ms-rteTable-default')[1].text.gsub(',','').gsub(/\s+/,' ').split
+    cols = @driver.find_elements(class: 'ms-rteTable-default').map {|i| i.text.gsub(',','').gsub(/\s+/,' ')}.select {|i| i=~/County/}[0].split
     if cols[2] == 'Deaths'
       cols = cols[3..-1]
       i = 0
@@ -1595,6 +1605,7 @@ h[:pending]
   end
 
   def parse_tx(h)
+=begin
     crawl_page
     if @url = @s.scan(/[^'"]+maps\.arcgis\.com\/apps\/opsdashboard[^'"]+/).first
       crawl_page
@@ -1602,6 +1613,10 @@ h[:pending]
       @errors << 'missing url'
       return h
     end
+=end
+# TODO this might break 
+@url = 'https://txdshs.maps.arcgis.com/apps/opsdashboard/index.html#/ed483ecd702b4298ab01e8b9cafc8b83'
+crawl_page
     sec = SEC
     loop do
       @s = @driver.find_elements(class: 'dashboard-page')[0].text
