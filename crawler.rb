@@ -250,7 +250,6 @@ class Crawler
     # Negative from CDPH report of 778 tests on 3/7, and 88 pos => 690 neg
     urls = @driver.page_source.scan(/Programs\/OPA\/Pages\/NR[^"']+/).map {|i| 'https://www.cdph.ca.gov/' + i} #.sort.reverse
     crawl_page urls.shift
-crawl_page urls.shift # TODO
     if (x=@driver.find_element(id: 'MainContent')) && x.text =~ /pproximately ([0-9,]+) tests had been conducted in California/
       h[:tested] = string_to_i($1)
     else
