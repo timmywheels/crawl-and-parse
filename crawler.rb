@@ -712,6 +712,8 @@ h[:pending]
 
   # TODO download pdf
   def parse_ma(h)
+    # puts "h:"
+    # puts h
     crawl_page
     sec = SEC/3
     loop do
@@ -730,12 +732,37 @@ h[:pending]
     puts "pdf? manual entry of tested from pdf"
 h[:deaths]=35
 h[:tested]=29371
-    if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as[^'"]+)/
+    if @driver.page_source =~ /([^'"]+covid-19-cases-in-massachusetts-as-of[^'"]+)/
       url = 'https://www.mass.gov' + $1
       `curl #{url} -o #{@path}#{@st}/#{@filetime}_1.pdf`
       `open #{@path}#{@st}/#{@filetime}_1.pdf`
-      puts 'manual entry from pdf' # TODO automate
-      byebug unless @auto_flag
+
+      ###
+
+      arr = []
+      PDF::Reader.open(`#{@path}#{@st}/#{@filetime}_1.pdf`) do |reader|
+        reader.pages.each do |page|
+          byebug
+          arr << page.text
+          puts arr
+        end
+        puts arr
+      end
+
+
+      # sleep 3
+      # @driver.find_element(:xpath, '//*[@id="download-ToolbarButton"]').click
+      # @driver.find_element(:xpath, '//*[@id="DownloadDialog-Dialog-Body-Id"]/div/button[4]').click
+      # sleep 3
+      # @driver.find_element(:xpath, '//*[@id="PdfDialog-Dialog-Body-Id"]/div/div[2]/div[4]/button').click
+      # sleep 5
+      # reader = PDF::Reader.new(File.join(ENV['userprofile'], "Downloads", filename ))
+      # result = reader.page(1).text
+
+      ###
+
+      # puts 'manual entry from pdf' # TODO automate
+      # byebug unless @auto_flag
     else
       @errors << 'missing pdf'
     end 
